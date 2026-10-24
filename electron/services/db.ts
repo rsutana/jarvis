@@ -117,7 +117,9 @@ export function snapshot(): Snapshot {
     delegation: d.delegation.slice(-400),
     usage: d.usage,
     settings: d.settings,
-    awaySince: d.awaySince
+    paused: d.paused,
+    awaySince: d.awaySince,
+    movedAgents: d.movedAgents
   }
 }
 

@@ -9,10 +9,11 @@ import type {
   ApprovalRequest,
   Automation,
   Change,
-  ChatMessage,
   Id,
   ISODate,
   Integration,
+  IpcEvents,
+  IpcInvoke,
   JarvisConfig,
   LimitPolicy,
   Mission,
@@ -115,10 +116,12 @@ export interface Snapshot {
   delegation: DelegationEntry[]
   usage: UsageSample[]
   settings: AppSettings
+  paused: Id[] // workspaces whose orchestrator is paused
   awaySince?: ISODate
+  movedAgents?: { agentIds: Id[]; from: Id; to: Id; at: ISODate }
 }
 
-export type Collection = Exclude<keyof Snapshot, 'awaySince'>
+export type Collection = Exclude<keyof Snapshot, 'awaySince' | 'movedAgents'>
 
 declare module './types' {
   interface IpcInvoke {
@@ -152,6 +155,8 @@ declare module './types' {
     'account:pauseAll': () => void
     'integration:save': (i: Integration) => Integration
     'automation:delete': (id: Id) => void
+    'approval:update': (id: Id, body: string) => void
+    'skill:save': (s: Skill) => Skill
   }
   interface IpcEvents {
     /** Main changed these collections; stores refetch the snapshot slice. */
@@ -185,3 +190,10 @@ export const MODELS: { name: string; provider: 'anthropic' | 'openai'; cli: stri
   { name: 'GPT-5.6-Sol', provider: 'openai', cli: 'gpt-5.6-sol' },
   { name: 'GPT-5.6', provider: 'openai', cli: 'gpt-5.6' }
 ]
+
+/** Shape of window.jarvis exposed by the preload script. */
+export interface JarvisApi {
+  invoke<K extends keyof IpcInvoke>(channel: K, ...args: Parameters<IpcInvoke[K]>): Promise<Awaited<ReturnType<IpcInvoke[K]>>>
+  on<K extends keyof IpcEvents>(event: K, cb: (payload: IpcEvents[K]) => void): () => void
+  platform: string
+}

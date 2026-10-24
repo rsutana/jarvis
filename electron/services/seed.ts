@@ -76,11 +76,11 @@ export function demoData(): DbSchema {
   const d = emptyData()
 
   d.accounts = [
-    { id: 'cc-ls', name: 'Claude Code LS', provider: 'anthropic', auth: 'claude_code', window: '5h', usagePct: 62, budgetTokens: 2_000_000, windowTokens: 1_240_000, resetAt: ago(-192) },
-    { id: 'cc-roy', name: 'Claude Code Roy', provider: 'anthropic', auth: 'claude_code', window: '5h', usagePct: 91, budgetTokens: 2_000_000, windowTokens: 1_820_000, resetAt: ago(-41) },
-    { id: 'codex-ls', name: 'Codex Leadstreet', provider: 'openai', auth: 'codex', window: 'weekly', usagePct: 34, budgetTokens: 20_000_000, windowTokens: 6_800_000 },
-    { id: 'api-anthropic', name: 'Anthropic API', provider: 'anthropic', auth: 'api_key', window: 'monthly', usagePct: 18, budgetTokens: 50_000_000, windowTokens: 9_000_000 },
-    { id: 'api-openai', name: 'OpenAI API', provider: 'openai', auth: 'api_key', window: 'monthly', usagePct: 5, budgetTokens: 50_000_000, windowTokens: 2_500_000 }
+    { id: 'cc-ls', name: 'Claude Code LS', provider: 'anthropic', auth: 'claude_code', window: '5h', usagePct: 62, budgetTokens: 2_000_000, windowTokens: 1_240_000, windowStart: ago(108), resetAt: ago(-192) },
+    { id: 'cc-roy', name: 'Claude Code Roy', provider: 'anthropic', auth: 'claude_code', window: '5h', usagePct: 91, budgetTokens: 2_000_000, windowTokens: 1_820_000, windowStart: ago(259), resetAt: ago(-41) },
+    { id: 'codex-ls', name: 'Codex Leadstreet', provider: 'openai', auth: 'codex', window: 'weekly', usagePct: 34, budgetTokens: 20_000_000, windowTokens: 6_800_000, windowStart: ago(4320) },
+    { id: 'api-anthropic', name: 'Anthropic API', provider: 'anthropic', auth: 'api_key', window: 'monthly', usagePct: 18, budgetTokens: 50_000_000, windowTokens: 9_000_000, windowStart: ago(14400) },
+    { id: 'api-openai', name: 'OpenAI API', provider: 'openai', auth: 'api_key', window: 'monthly', usagePct: 5, budgetTokens: 50_000_000, windowTokens: 2_500_000, windowStart: ago(14400) }
   ]
 
   d.skills = [

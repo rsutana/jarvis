@@ -1,0 +1,100 @@
+@import 'tailwindcss';
+@config '../tailwind.config.cjs';
+
+@layer base {
+  html,
+  body,
+  #app {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+  body {
+    -webkit-font-smoothing: antialiased;
+  }
+  a {
+    @apply text-accent-link no-underline hover:text-accent-hover;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  ::selection {
+    @apply bg-accent-ring;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: var(--color-accent);
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex min-h-control cursor-pointer items-center justify-center gap-2 rounded-control border border-line-strong bg-raised px-3.5 text-[13.5px] font-medium whitespace-nowrap text-ink no-underline transition-colors hover:bg-accent-active hover:text-ink disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-pri {
+    @apply border-accent bg-accent text-app hover:bg-accent-link hover:text-app;
+  }
+  .btn-ghost {
+    @apply bg-transparent;
+  }
+  .btn-danger {
+    @apply text-status-danger;
+  }
+  .btn-sm {
+    @apply min-h-8 px-2.5 text-small;
+  }
+  .btn-icon {
+    @apply w-10 px-0;
+  }
+  .field {
+    @apply min-h-control w-full rounded-control border border-line-strong bg-well px-3 py-2 text-body text-ink placeholder:text-ink-faint;
+  }
+  .field-label {
+    @apply mb-1.5 block text-small font-medium text-ink-muted;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-transparent px-2.5 py-0.5 text-xs whitespace-nowrap text-ink-muted;
+  }
+  .lbl {
+    @apply text-label text-ink-label uppercase;
+  }
+  .card {
+    @apply rounded-card border border-line bg-card;
+  }
+  .dot {
+    @apply inline-block size-2 flex-none rounded-full;
+  }
+  .x-close {
+    @apply inline-flex size-9 items-center justify-center rounded-control text-xl text-ink-muted no-underline hover:bg-raised hover:text-ink;
+  }
+  .seg {
+    @apply flex flex-wrap gap-1 rounded-row border border-line bg-card p-1;
+  }
+  .seg > button {
+    @apply min-h-8 cursor-pointer rounded-control border-0 bg-transparent px-2.5 text-small text-ink-muted aria-pressed:bg-accent-active aria-pressed:text-ink aria-selected:bg-accent-active aria-selected:text-ink;
+  }
+  .mono {
+    @apply font-mono;
+  }
+  .sr-only-label {
+    @apply sr-only;
+  }
+  .term {
+    @apply rounded-row border border-line-soft bg-app px-3.5 py-3 font-mono text-[12.5px] leading-relaxed whitespace-pre-wrap text-ink-muted;
+  }
+  .md p {
+    @apply my-0 [&+p]:mt-2;
+  }
+  .md code {
+    @apply rounded bg-raised px-1 font-mono text-[12.5px];
+  }
+  .md ul,
+  .md ol {
+    @apply my-1 pl-5;
+  }
+}
