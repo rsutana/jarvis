@@ -17,6 +17,7 @@ import { useData } from '@/stores/data'
 import { useUi } from '@/stores/ui'
 
 const host = ref<HTMLDivElement>()
+const glError = ref('')
 const route = useRoute()
 const router = useRouter()
 const data = useData()
@@ -30,7 +31,7 @@ let world: World | null = null
 let dirty = true
 let raf = 0
 let ro: ResizeObserver | null = null
-const clock = new THREE.Clock()
+const timer = new THREE.Timer()
 
 const wsId = computed(() => (route.meta.world === 'office' ? (route.params.id as string) : undefined))
 
@@ -132,7 +133,8 @@ function shiftFor(): number {
 function loop(): void {
   raf = requestAnimationFrame(loop)
   const moving = iso.step()
-  const animating = world?.animate(clock.getElapsedTime()) ?? false
+  timer.update()
+  const animating = world?.animate(timer.getElapsed()) ?? false
   if (dirty || moving || animating) {
     renderer.render(scene, iso.camera)
     labelRenderer.render(scene, iso.camera)
@@ -197,13 +199,19 @@ const recenter = () => {
 
 onMounted(() => {
   const el = host.value!
-  renderer = new THREE.WebGLRenderer({ antialias: true })
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true })
+  } catch (e) {
+    // no WebGL: keep every panel usable, just without the world behind them
+    glError.value = (e as Error).message
+    return
+  }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.setClearColor('#0B0D10')
   renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  renderer.shadowMap.type = THREE.PCFShadowMap
   el.appendChild(renderer.domElement)
   labelRenderer = new CSS2DRenderer()
   labelRenderer.domElement.className = 'pointer-events-none absolute inset-0 z-10'
@@ -258,12 +266,16 @@ onBeforeUnmount(() => {
   ro?.disconnect()
   world?.dispose()
   renderer?.dispose()
+  timer.dispose()
 })
 </script>
 
 <template>
   <div ref="host" class="absolute inset-0 overflow-hidden" role="application" aria-label="Isometric world">
-    <div class="pointer-events-auto absolute bottom-hud left-hud z-20 flex gap-1 rounded-hud border border-line-strong bg-hud p-1">
+    <p v-if="glError" class="absolute top-1/2 left-hud max-w-[420px] -translate-y-1/2 text-small text-ink-faint">
+      The 3D world needs WebGL, which this machine could not start ({{ glError }}). Everything else works.
+    </p>
+    <div v-if="!glError" class="pointer-events-auto absolute bottom-hud left-hud z-20 flex gap-1 rounded-hud border border-line-strong bg-hud p-1">
       <button type="button" class="btn btn-ghost btn-icon btn-sm" aria-label="Zoom in" @click="zoom(1.15)"><Icon name="plus" :size="16" /></button>
       <button type="button" class="btn btn-ghost btn-icon btn-sm" aria-label="Zoom out" @click="zoom(1 / 1.15)"><Icon name="minus" :size="16" /></button>
       <button type="button" class="btn btn-ghost btn-sm" @click="recenter">Recenter</button>

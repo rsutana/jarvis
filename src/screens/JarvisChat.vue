@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import type { Mission } from '@shared/types'
 import DrawerPanel from '@/shell/DrawerPanel.vue'
 import ChatThread from '@/components/ChatThread.vue'
 import Composer from '@/components/Composer.vue'
@@ -22,7 +23,7 @@ const jarvis = computed(() => data.snap!.jarvis)
 /** Plan on the right: ?mission=, else the latest mission card in this conversation. */
 const mission = computed(() => {
   const id = (route.query.mission as string) ?? [...messages.value].reverse().find((m) => m.missionId)?.missionId
-  return data.snap?.missions.find((m) => m.id === id) as (typeof data.snap.missions)[number] & { schedule?: string } | undefined
+  return data.snap?.missions.find((m) => m.id === id) as (Mission & { schedule?: string }) | undefined
 })
 const ws = computed(() => data.workspace(mission.value?.workspaceId))
 const statusTone: Record<string, string> = { awaiting_approval: 'text-status-review', draft: 'text-status-review', running: 'text-status-working', done: 'text-status-done', failed: 'text-status-danger' }

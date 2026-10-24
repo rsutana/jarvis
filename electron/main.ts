@@ -8,6 +8,9 @@ import { schedule } from './services/orchestrator'
 import { tickAccounts } from './services/accounts'
 
 const dir = import.meta.dirname
+// WSL, VMs and remote desktops often have blocklisted GPUs; the iso scene is light enough for software GL
+app.commandLine.appendSwitch('ignore-gpu-blocklist')
+const res = (): string => (app.isPackaged ? join(process.resourcesPath, 'resources') : join(dir, '../../resources'))
 let win: BrowserWindow | null = null
 let tray: Tray | null = null
 
@@ -19,6 +22,7 @@ function createWindow(): void {
     minHeight: 720,
     backgroundColor: '#0B0D10',
     title: 'Jarvis',
+    icon: join(res(), 'icon.png'),
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
@@ -42,7 +46,7 @@ function createWindow(): void {
 }
 
 function createTray(): void {
-  const icon = nativeImage.createFromPath(join(dir, '../../resources/icon.png'))
+  const icon = nativeImage.createFromPath(join(res(), 'icon.png'))
   if (icon.isEmpty()) return
   tray = new Tray(icon.resize({ width: 18, height: 18 }))
   tray.setToolTip('Jarvis')

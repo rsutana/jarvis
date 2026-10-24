@@ -1,0 +1,21 @@
+appId: dev.jarvis.orchestrator
+productName: Jarvis
+directories:
+  buildResources: resources
+  output: dist
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+extraResources:
+  - from: resources
+    to: resources
+    filter: ['**/*']
+linux:
+  target: [AppImage, deb]
+  category: Development
+win:
+  target: nsis
+mac:
+  target: dmg
+  category: public.app-category.developer-tools

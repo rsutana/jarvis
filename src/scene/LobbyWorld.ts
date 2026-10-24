@@ -104,7 +104,7 @@ export function buildLobby(input: LobbyInput): World {
   const jp = layout.jarvisPortal
   cyl(portal, px, pz, jp.radius * 0.8, jp.pedestalHeight, 0.06, '#2B3646')
   const coreMat = new THREE.MeshStandardMaterial({ color: jp.colors.core, emissive: jp.colors.core, emissiveIntensity: 0.8, roughness: 0.4 })
-  const core = sphere(portal, px, 1.4, pz, 0.45, coreMat)
+  sphere(portal, px, 1.4, pz, 0.45, coreMat)
   const ring = torus(portal, px, 1.4, pz, jp.radius * 0.7, 0.06, mat(jp.colors.ring, { emissive: jp.colors.ring, emissiveIntensity: 0.9 }))
   const beam = cyl(portal, px, pz, 0.25, jp.beamHeight, 0.36, mat(jp.colors.core, { emissive: jp.colors.core, emissiveIntensity: 0.6, opacity: 0.25 }))
   beam.castShadow = false

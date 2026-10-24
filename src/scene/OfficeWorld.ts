@@ -270,10 +270,10 @@ export function buildOffice(input: OfficeInput): World {
 
   // labels from JSON
   const lt = layout.labels.find((l) => l.id === 'task-board')!
-  labels.add(g, lt.anchor, { title: 'Task board', sub: `${input.counts.active} active · ${input.counts.todo} todo · ${input.counts.review} review`, onClick: () => input.go(`/w/${input.workspaceId}/tasks`) })
+  labels.add(g, lt.anchor!, { title: 'Task board', sub: `${input.counts.active} active · ${input.counts.todo} todo · ${input.counts.review} review`, onClick: () => input.go(`/w/${input.workspaceId}/tasks`) })
   const lo = layout.labels.find((l) => l.id === 'orchestrator')!
   if (orch)
-    labels.add(g, lo.anchor, {
+    labels.add(g, lo.anchor!, {
       title: orch.name,
       sub: `Orchestrator · ${orch.status}`,
       dot: DOT[orch.status],
@@ -281,12 +281,12 @@ export function buildOffice(input: OfficeInput): World {
       selected: input.highlightOrchestrator,
       onClick: () => input.go(`/w/${input.workspaceId}/orchestrator`)
     })
-  else labels.add(g, lo.anchor, { title: 'No orchestrator', sub: 'Set one up in Settings', dot: 'bg-status-review', onClick: () => input.go(`/w/${input.workspaceId}/settings`) })
+  else labels.add(g, lo.anchor!, { title: 'No orchestrator', sub: 'Set one up in Settings', dot: 'bg-status-review', onClick: () => input.go(`/w/${input.workspaceId}/settings`) })
   const lf = layout.labels.find((l) => l.id === 'project-files')!
-  labels.add(g, lf.anchor, { title: 'Project files', sub: input.folderPath || 'No folder yet · choose one', onClick: () => input.go(`/w/${input.workspaceId}/settings`) })
+  labels.add(g, lf.anchor!, { title: 'Project files', sub: input.folderPath || 'No folder yet · choose one', onClick: () => input.go(`/w/${input.workspaceId}/settings`) })
   for (const id of ['coffee', 'meeting-room', 'break-area']) {
     const l = layout.labels.find((x) => x.id === id)!
-    labels.add(g, l.anchor, { title: l.title, sub: id === 'meeting-room' ? 'Free' : l.sub })
+    labels.add(g, l.anchor!, { title: l.title, sub: id === 'meeting-room' ? 'Free' : l.sub })
   }
 
   const working = figures.some((f) => f.status === 'working')

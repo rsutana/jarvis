@@ -11,8 +11,8 @@ export class IsoCamera {
   zoom = 1
   min = 0.6
   max = 1.8
-  /** pixels per world unit at zoom 1 (matches the canvas boards: 30px tile half-width) */
-  ppu = 42
+  /** pixels per world unit at zoom 1; frames the whole campus or office beside a drawer */
+  ppu = 36
   bounds = { minX: 0, maxX: 20, minZ: 0, maxZ: 20 }
   private w = 1
   private h = 1

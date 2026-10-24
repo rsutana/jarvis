@@ -1,6 +1,12 @@
 @import 'tailwindcss';
 @config '../tailwind.config.cjs';
 
+/* The JS config does not emit CSS variables; expose the few tokens plain CSS needs. */
+:root {
+  --color-accent: theme(colors.accent.DEFAULT);
+  --color-line-strong: theme(colors.line.strong);
+}
+
 @layer base {
   html,
   body,

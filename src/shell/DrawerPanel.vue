@@ -9,7 +9,7 @@ const w = computed(() => props.width ?? route.meta.drawer)
 <template>
   <aside
     :aria-label="label"
-    class="pointer-events-auto absolute top-drawer-top right-hud bottom-drawer-bottom z-20 flex max-w-[calc(100%-32px)] flex-col overflow-hidden rounded-drawer border border-line-strong bg-drawer shadow-drawer max-[1100px]:left-hud max-[1100px]:!w-auto"
+    class="pointer-events-auto absolute top-drawer-top right-hud bottom-drawer-bottom z-20 flex max-w-[calc(100%-32px)] flex-col overflow-hidden rounded-drawer border border-line-strong bg-drawer shadow-drawer backdrop-blur-md max-[1100px]:left-hud max-[1100px]:!w-auto"
     :style="{ width: w + 'px' }"
   >
     <header v-if="!bare" class="flex min-h-[60px] flex-wrap items-center gap-3 border-b border-line py-3 pr-4 pl-5">

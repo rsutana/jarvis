@@ -11,6 +11,7 @@ import { spawnClaude, isAnthropicModel, type ClaudeEvent, type ClaudeHandle } fr
 import { accountFor, recordRateLimit, recordUsage } from './accounts'
 import * as git from './git'
 import { createApproval } from './approvals'
+import { mergeBranch } from './changes'
 
 interface Live {
   run: StoredRun
@@ -59,12 +60,15 @@ function toolsFor(agent: AnyAgent, qa: boolean): { tools: string[]; edits: boole
   return { tools, edits }
 }
 
-function short(p: unknown): string {
-  const s = String(p ?? '')
+/** Paths inside the worktree read better relative to it. */
+function short(p: unknown, cwd = ''): string {
+  let s = String(p ?? '')
+  if (cwd && s.startsWith(cwd)) s = s.slice(cwd.length).replace(/^[\\/]/, '')
   return s.length > 90 ? '…' + s.slice(-88) : s
 }
 
-function mapEvent(e: ClaudeEvent): RunEvent | null {
+function mapEvent(e: ClaudeEvent, cwd: string): RunEvent | null {
+  const rel = (x: unknown) => short(x, cwd)
   const t = now()
   switch (e.type) {
     case 'text':
@@ -73,10 +77,10 @@ function mapEvent(e: ClaudeEvent): RunEvent | null {
       return { t, kind: 'thinking', title: 'Thinking…', text: e.text.slice(0, 600) }
     case 'tool': {
       const i = e.input as Record<string, string>
-      if (e.name === 'Read') return { t, kind: 'read', title: `Read ${short(i.file_path)}`, code: i.file_path }
-      if (e.name === 'Glob' || e.name === 'Grep') return { t, kind: 'read', title: `Searched ${short(i.pattern)}`, code: i.path ?? i.pattern }
-      if (e.name === 'Write') return { t, kind: 'edit', title: `Wrote ${short(i.file_path)}`, code: '+ ' + i.file_path }
-      if (EDIT_TOOLS.includes(e.name)) return { t, kind: 'edit', title: `Edited ${short(i.file_path ?? i.notebook_path)}`, code: '~ ' + (i.file_path ?? i.notebook_path) }
+      if (e.name === 'Read') return { t, kind: 'read', title: `Read ${rel(i.file_path)}`, code: rel(i.file_path) }
+      if (e.name === 'Glob' || e.name === 'Grep') return { t, kind: 'read', title: `Searched ${short(i.pattern)}`, code: i.path ? rel(i.path) : i.pattern }
+      if (e.name === 'Write') return { t, kind: 'edit', title: `Wrote ${rel(i.file_path)}`, code: '+ ' + rel(i.file_path) }
+      if (EDIT_TOOLS.includes(e.name)) return { t, kind: 'edit', title: `Edited ${rel(i.file_path ?? i.notebook_path)}`, code: '~ ' + rel(i.file_path ?? i.notebook_path) }
       if (e.name === 'Bash') return { t, kind: 'command', title: 'Ran command', code: '$ ' + i.command }
       if (e.name === 'WebSearch') return { t, kind: 'read', title: `Searched the web: ${short(i.query)}` }
       if (e.name === 'WebFetch') return { t, kind: 'read', title: `Read ${short(i.url)}` }
@@ -202,7 +206,7 @@ export async function startTask(taskId: string, resumeRun?: StoredRun, steerText
       }
       if (e.type === 'rate_limit') recordRateLimit(pick.account.id, e.status, e.resetsAt)
       if (e.type === 'tool') toolCalls++
-      const ev = mapEvent(e)
+      const ev = mapEvent(e, cwd)
       if (ev) {
         push(run, ev)
         task.note = ev.title
@@ -255,7 +259,6 @@ async function finish(task: StoredTask, agent: AnyAgent, run: StoredRun, cwd: st
     setAgent(agent, 'idle')
     commit('tasks', 'changes', 'runs')
     if (pass && change && ws.git.mergePolicy === 'auto_with_revert') {
-      const { mergeBranch } = await import('./changes')
       await mergeBranch(ws.id, change.branch).catch((e) => toast(String(e.message ?? e), 'bad'))
     }
     onFinished(task)

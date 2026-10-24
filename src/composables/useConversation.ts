@@ -21,7 +21,7 @@ export function useConversation(id: Ref<string | undefined>) {
   )
 
   async function send(text: string): Promise<void> {
-    let cid = current.value?.id
+    let cid: string | undefined = current.value?.id
     if (!cid) cid = (await ui.act(() => invoke('jarvis:newConversation')))?.id
     if (!cid) return
     if (!data.messages[cid]) await data.loadMessages(cid)
