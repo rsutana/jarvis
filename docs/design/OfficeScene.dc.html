@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Office scene</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div onPointerDown="{{down}}" onPointerMove="{{move}}" onPointerUp="{{up}}" onPointerLeave="{{up}}" onWheel="{{wheel}}" style="position: absolute; inset: 0; overflow: hidden; background: #0B0D10; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #E9EBEE; cursor: {{cursor}}; touch-action: none">
+  <div style="position: absolute; left: 50%; top: 50%; width: 1440px; height: 1000px; margin-left: -720px; margin-top: -500px; transform: translate({{sx}}, {{sy}}) scale({{zoom}}); transform-origin: 50% 50%">
+    <div aria-hidden="true">
+      <sc-for list="{{shapes}}" as="s" hint-placeholder-count="0">
+        <div style="position: absolute; box-sizing: border-box; left: {{s.l}}; top: {{s.t}}; width: {{s.w}}; height: {{s.h}}; background: {{s.bg}}; clip-path: {{s.clip}}; border-radius: {{s.rad}}; opacity: {{s.op}}; border: {{s.bd}}; box-shadow: {{s.sh}}"></div>
+      </sc-for>
+    </div>
+    <sc-for list="{{bubbles}}" as="b" hint-placeholder-count="0">
+      <span aria-hidden="true" style="position: absolute; left: {{b.x}}; top: {{b.y}}; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: {{b.bg}}; color: {{b.fg}}; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4)">{{b.t}}</span>
+    </sc-for>
+    <sc-for list="{{places}}" as="t" hint-placeholder-count="6">
+      <a href="{{t.href}}" style="position: absolute; left: {{t.x}}; top: {{t.y}}; transform: translate(-50%, -100%); display: flex; flex-direction: column; gap: 1px; padding: 6px 11px 7px; background: rgba(16, 19, 23, 0.94); border: 1px solid {{t.bc}}; border-radius: 10px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45); text-decoration: none; color: #E9EBEE; white-space: nowrap">
+        <span style="display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{t.dot}}"></span>{{t.name}}</span>
+        <span style="font-size: 11.5px; color: {{t.subc}}; padding-left: 15px">{{t.sub}}</span>
+      </a>
+    </sc-for>
+    <sc-for list="{{agents}}" as="t" hint-placeholder-count="9">
+      <button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="position: absolute; left: {{t.x}}; top: {{t.y}}; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 11px 7px; background: rgba(16, 19, 23, 0.94); border: 1px solid {{t.bc}}; border-radius: 10px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45); color: #E9EBEE; font: inherit; text-align: left; white-space: nowrap; cursor: pointer">
+        <span style="display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{t.dot}}"></span>{{t.name}}</span>
+        <span style="font-size: 11.5px; color: #A2A9B4; padding-left: 15px">{{t.role}}</span>
+      </button>
+    </sc-for>
+  </div>
+  <div style="position: absolute; left: 20px; bottom: 150px; display: flex; flex-direction: column; gap: 6px">
+    <button type="button" onClick="{{zin}}" aria-label="Zoom in" style="width: 40px; height: 40px; border-radius: 10px; background: rgba(20, 23, 28, 0.94); border: 1px solid #2F353E; color: #E9EBEE; font: inherit; font-size: 20px; cursor: pointer">+</button>
+    <button type="button" onClick="{{zout}}" aria-label="Zoom out" style="width: 40px; height: 40px; border-radius: 10px; background: rgba(20, 23, 28, 0.94); border: 1px solid #2F353E; color: #E9EBEE; font: inherit; font-size: 20px; cursor: pointer">−</button>
+    <button type="button" onClick="{{reset}}" aria-label="Recenter view" style="width: 40px; height: 40px; border-radius: 10px; background: rgba(20, 23, 28, 0.94); border: 1px solid #2F353E; color: #E9EBEE; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M12 9a3 3 0 100 6 3 3 0 000-6z"></path></svg></button>
+  </div>
+  <div style="position: absolute; left: 20px; bottom: 104px; font-size: 12px; color: #A2A9B4; background: rgba(16, 19, 23, 0.85); padding: 6px 10px; border-radius: 8px">Drag to pan · scroll to zoom · click anyone in the room</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"shift":{"editor":"int","default":0,"min":-600,"max":600,"unit":"px"},"zoom":{"editor":"range","default":1,"min":0.6,"max":1.4,"step":0.05},"selected":{"editor":"int","default":-1,"min":-1,"max":9},"onAgent":{"editor":null},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { zf: 1, dx: 0, dy: 0, drag: false, px: 0, py: 0, ox: 0, oy: 0 }; }
+  renderVals() {
+    const A = 30, B = 15, OX = 630, OY = 230;
+    const P = (x, y, z) => [OX + (x - y) * A, OY + (x + y) * B - (z || 0)];
+    const S = [];
+    const base = { clip: 'none', rad: '0', op: '1', bd: 'none', sh: 'none' };
+    const poly = (pts, bg, op) => {
+      const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+      const l = Math.min.apply(null, xs), t = Math.min.apply(null, ys);
+      const w = Math.max(1, Math.max.apply(null, xs) - l), h = Math.max(1, Math.max.apply(null, ys) - t);
+      S.push(Object.assign({}, base, { l: l + 'px', t: t + 'px', w: w + 'px', h: h + 'px', bg: bg, op: String(op == null ? 1 : op),
+        clip: 'polygon(' + pts.map(p => (p[0] - l).toFixed(1) + 'px ' + (p[1] - t).toFixed(1) + 'px').join(', ') + ')' }));
+    };
+    const quad = (a, b, c, d, bg, op) => poly([a, b, c, d], bg, op);
+    const box = (x, y, w, d, h, z0, top, lf, rt) => {
+      const z1 = z0 + h;
+      quad(P(x, y + d, z0), P(x + w, y + d, z0), P(x + w, y + d, z1), P(x, y + d, z1), lf);
+      quad(P(x + w, y, z0), P(x + w, y + d, z0), P(x + w, y + d, z1), P(x + w, y, z1), rt);
+      quad(P(x, y, z1), P(x + w, y, z1), P(x + w, y + d, z1), P(x, y + d, z1), top);
+    };
+    const flat = (x, y, w, d, z, bg, op) => quad(P(x, y, z), P(x + w, y, z), P(x + w, y + d, z), P(x, y + d, z), bg, op);
+    const ell = (x, y, z, r, bg, o) => { const c = P(x, y, z), w = 2 * Math.SQRT2 * r * A, h = 2 * Math.SQRT2 * r * B; S.push(Object.assign({}, base, { l: (c[0] - w / 2) + 'px', t: (c[1] - h / 2) + 'px', w: w + 'px', h: h + 'px', bg: bg, rad: '50%' }, o || {})); };
+    const rect = (l, t, w, h, bg, o) => S.push(Object.assign({}, base, { l: l + 'px', t: t + 'px', w: w + 'px', h: h + 'px', bg: bg }, o || {}));
+    const planeY = (y, x1, x2, z1, z2, bg, op) => quad(P(x1, y, z1), P(x2, y, z1), P(x2, y, z2), P(x1, y, z2), bg, op);
+    const planeX = (x, y1, y2, z1, z2, bg, op) => quad(P(x, y1, z1), P(x, y2, z1), P(x, y2, z2), P(x, y1, z2), bg, op);
+    const WOOD = ['#D2A878', '#B48A5C', '#957049'];
+    const DARK = ['#2E3646', '#262D3A', '#1F2530'];
+
+    const W = 24, D = 18;
+    box(0, 0, W, D, 14, -14, '#5E6672', '#3A404B', '#30353F');
+    for (let i = 0; i < W; i++) for (let j = 0; j < D; j++) if ((i + j) % 2) flat(i, j, 1, 1, 0, '#59616D');
+    box(-0.4, -0.4, 0.4, D + 0.4, 150, 0, '#58627A', '#2E3546', '#3B4357');
+    box(0, -0.4, W, 0.4, 150, 0, '#58627A', '#424A5E', '#2E3546');
+    planeY(0.02, 0, W, 0, 7, '#2FA58A'); planeX(0.02, 0, D, 0, 7, '#2FA58A');
+    planeY(0.02, 0, W, 140, 150, '#4E576C'); planeX(0.02, 0, D, 140, 150, '#4E576C');
+    const winY = (x1, x2) => { planeY(0.02, x1, x2, 45, 125, '#232A36'); const m = (x1 + x2) / 2; planeY(0.02, x1 + 0.12, m - 0.06, 50, 120, 'linear-gradient(165deg,#86B4E6,#3F6EA6)'); planeY(0.02, m + 0.06, x2 - 0.12, 50, 120, 'linear-gradient(165deg,#86B4E6,#3F6EA6)'); planeY(0.02, x1, x2, 43, 47, '#6A7488'); };
+    const winX = (y1, y2) => { planeX(0.02, y1, y2, 45, 125, '#232A36'); const m = (y1 + y2) / 2; planeX(0.02, y1 + 0.12, m - 0.06, 50, 120, 'linear-gradient(195deg,#7AA8DA,#355F94)'); planeX(0.02, m + 0.06, y2 - 0.12, 50, 120, 'linear-gradient(195deg,#7AA8DA,#355F94)'); planeX(0.02, y1, y2, 43, 47, '#6A7488'); };
+    [2.5, 6, 9.5, 13].forEach(x => winY(x, x + 2.6));
+    winX(10, 12.4); winX(13.4, 15.8);
+    planeX(0.02, 2, 7.6, 48, 124, '#9AA3AE'); planeX(0.03, 2.15, 7.45, 52, 120, '#EEF1F4');
+    planeX(0.04, 2.4, 3.8, 98, 110, '#F2B544'); planeX(0.04, 2.4, 3.8, 80, 92, '#F2B544'); planeX(0.04, 4.1, 5.5, 98, 110, '#5E9BEA'); planeX(0.04, 4.1, 5.5, 80, 92, '#5E9BEA'); planeX(0.04, 4.1, 5.5, 62, 74, '#5E9BEA'); planeX(0.04, 5.8, 7.2, 98, 110, '#9CC77A'); planeX(0.04, 5.8, 7.2, 80, 92, '#B8C0CA');
+
+    const sel = Number(this.props.selected == null ? -1 : this.props.selected);
+    const cb = this.props.onAgent;
+    const ST = { w: ['#4FD1B5', '•••', '#0D0F12'], r: ['#F2B544', '!', '#0D0F12'], b: ['#FF8A7A', '!', '#0D0F12'], i: ['#4A5260', 'z', '#E9EBEE'] };
+    const bubbles = [], agents = [], objs = [];
+    const figure = (x, y, z, shirt, hair, pants, skin, glasses, isSel, st) => {
+      if (isSel) ell(x, y, z, 0.75, 'rgba(140,155,255,0.18)', { bd: '2px solid #8C9BFF', sh: '0 0 16px rgba(140,155,255,0.6)' });
+      ell(x, y, z, 0.38, 'rgba(0,0,0,0.28)');
+      const f = P(x, y, z);
+      rect(f[0] - 7, f[1] - 18, 6, 15, pants, { rad: '2px' });
+      rect(f[0] + 1, f[1] - 18, 6, 15, pants, { rad: '2px', sh: 'inset -2px 0 0 rgba(0,0,0,0.2)' });
+      rect(f[0] - 8, f[1] - 5, 7, 5, '#1E2229', { rad: '3px 3px 1px 1px' });
+      rect(f[0] + 1, f[1] - 5, 7, 5, '#1E2229', { rad: '3px 3px 1px 1px' });
+      rect(f[0] - 14, f[1] - 40, 5, 19, shirt, { rad: '3px', sh: 'inset -2px 0 0 rgba(0,0,0,0.2)' });
+      rect(f[0] + 9, f[1] - 40, 5, 19, shirt, { rad: '3px', sh: 'inset -2px 0 0 rgba(0,0,0,0.25)' });
+      rect(f[0] - 14, f[1] - 22, 5, 5, skin, { rad: '50%' });
+      rect(f[0] + 9, f[1] - 22, 5, 5, skin, { rad: '50%' });
+      rect(f[0] - 10, f[1] - 42, 20, 26, shirt, { rad: '8px 8px 3px 3px', sh: 'inset -4px 0 0 rgba(0,0,0,0.15)' });
+      rect(f[0] - 4, f[1] - 42, 8, 5, 'rgba(255,255,255,0.35)', { rad: '0 0 4px 4px' });
+      rect(f[0] - 11, f[1] - 65, 22, 23, skin, { rad: '50%', sh: 'inset -3px -2px 0 rgba(0,0,0,0.1)' });
+      rect(f[0] - 12, f[1] - 68, 24, 12, hair, { rad: '12px 12px 4px 4px' });
+      rect(f[0] - 6, f[1] - 53, 3, 3, '#1E2229', { rad: '50%' });
+      rect(f[0] + 3, f[1] - 53, 3, 3, '#1E2229', { rad: '50%' });
+      if (glasses) { rect(f[0] - 9, f[1] - 56, 8, 7, 'transparent', { bd: '1.5px solid #1E2229', rad: '2px' }); rect(f[0] + 1, f[1] - 56, 8, 7, 'transparent', { bd: '1.5px solid #1E2229', rad: '2px' }); }
+      const s = ST[st];
+      bubbles.push({ x: (f[0] + 10) + 'px', y: (f[1] - 86) + 'px', t: s[1], bg: s[0], fg: s[2] });
+    };
+    const chair = (x, y) => {
+      ell(x, y, 0, 0.3, '#1A1E25');
+      box(x - 0.05, y - 0.05, 0.1, 0.1, 10, 0, '#3A414C', '#2B313A', '#232830');
+      box(x - 0.32, y - 0.32, 0.64, 0.64, 4, 10, DARK[0], DARK[1], DARK[2]);
+      box(x - 0.32, y - 0.42, 0.64, 0.12, 20, 12, DARK[0], DARK[1], DARK[2]);
+    };
+    const desk = (dx, dy, glow, mugC, plant) => {
+      box(dx + 0.06, dy + 1.0, 0.12, 0.12, 17, 0, '#6E5136', '#6E5136', '#5A4129');
+      box(dx + 1.7, dy + 0.1, 0.62, 1.0, 17, 0, '#C29A6C', '#A57E52', '#86653F');
+      planeY(dy + 1.1, dx + 1.78, dx + 2.24, 10, 11.5, '#6E5136');
+      box(dx, dy, 2.4, 1.2, 3, 17, WOOD[0], WOOD[1], WOOD[2]);
+      [dx + 0.3, dx + 1.15].forEach(mx => {
+        box(mx + 0.32, dy + 0.18, 0.1, 0.1, 3, 20, '#3A414C', '#2B313A', '#232830');
+        box(mx, dy + 0.12, 0.78, 0.08, 22, 23, '#1A1E25', '#232833', '#14171C');
+        planeY(dy + 0.205, mx + 0.05, mx + 0.73, 25, 43, glow ? 'linear-gradient(160deg,#7FE6CF,#2FA58A)' : 'linear-gradient(160deg,#3B4A60,#26303F)');
+      });
+      box(dx + 0.55, dy + 0.55, 0.95, 0.26, 1.2, 20, '#D5DAE1', '#AEB5BF', '#8E96A1');
+      box(dx + 1.62, dy + 0.62, 0.14, 0.2, 1.4, 20, '#D5DAE1', '#AEB5BF', '#8E96A1');
+      box(dx + 0.1, dy + 0.62, 0.18, 0.18, 6, 20, mugC, mugC, mugC);
+      if (plant) { box(dx + 2.0, dy + 0.2, 0.25, 0.25, 6, 20, '#C98A55', '#A86F42', '#8A5A35'); const c = P(dx + 2.12, dy + 0.32, 34); rect(c[0] - 8, c[1] - 6, 16, 14, '#3FA06E', { rad: '50%', sh: 'inset -3px -3px 0 rgba(0,0,0,0.2)' }); }
+    };
+    const plantBig = (x, y) => objs.push({ k: x + y + 0.7, draw: () => {
+      box(x, y, 0.7, 0.7, 14, 0, '#E7E2D8', '#CFC9BD', '#B3AD9F');
+      const c = P(x + 0.35, y + 0.35, 30);
+      rect(c[0] - 15, c[1] - 6, 30, 22, '#2F8F5F', { rad: '50%', sh: 'inset -5px -4px 0 rgba(0,0,0,0.2)' });
+      rect(c[0] - 12, c[1] - 22, 16, 22, '#3DAA70', { rad: '50% 50% 40% 40%' });
+      rect(c[0] - 2, c[1] - 26, 15, 24, '#45B87A', { rad: '50% 50% 40% 40%', sh: 'inset -3px -3px 0 rgba(0,0,0,0.18)' });
+    } });
+
+    const raw = [
+      ['Rex', 'HubSpot Module Developer', '#5ED0C0', '#2B2420', '#334155', '#C98E6A', false, 7, 12, 'w', '#F2B544', false],
+      ['Kei', 'QA Tester', '#E5584A', '#3A2A20', '#2B3240', '#F0D2B8', true, 7, 3, 'w', '#5E9BEA', true],
+      ['Shake', 'Customer Support', '#6C7CF0', '#E8E2D6', '#2B3240', '#F3D9C4', false, 11.5, 3, 'r', '#E5584A', false],
+      ['Mika', 'Content Writer', '#4FB89A', '#1F1A17', '#2B3240', '#8E5B3E', false, 16, 3, 'i', '#F2B544', true],
+      ['Ivo', 'HubSpot Theme Developer', '#E5584A', '#4A2E1E', '#2B3240', '#F0D2B8', true, 11.5, 7.5, 'i', '#4FD1B5', false],
+      ['Nia', 'Market Researcher', '#9B7AE8', '#2B1F1A', '#2B3240', '#D6A27E', true, 16, 7.5, 'i', '#E5584A', true],
+      ['Tomo', 'HubSpot Theme Build Engineer', '#3E8EEA', '#5A3A24', '#2B3240', '#F0D2B8', true, 7, 7.5, 'i', '#9B7AE8', false],
+      ['Lux', 'HubSpot Theme Designer', '#E5584A', '#C9C3BA', '#2B3240', '#F3D9C4', true, 11.5, 12, 'i', '#4FD1B5', true],
+      ['Wren', 'Theme Market Researcher', '#5BB04F', '#1F1A17', '#2B3240', '#C98E6A', false, 16, 12, 'b', '#F2B544', false]
+    ];
+    raw.forEach((a, i) => {
+      const dx = a[7], dy = a[8], ax = dx + 1.2, ay = dy + 1.85;
+      objs.push({ k: dx + 1.2 + dy + 0.6, draw: () => desk(dx, dy, a[9] === 'w', a[10], a[11]) });
+      objs.push({ k: dx + 0.2 + dy + 1.75, draw: () => chair(dx + 0.25, dy + 1.75) });
+      objs.push({ k: ax + ay, draw: () => figure(ax, ay, 0, a[2], a[3], a[4], a[5], a[6], i === sel, a[9]) });
+      const p = P(ax, ay, 96);
+      agents.push({ x: p[0] + 'px', y: p[1] + 'px', name: a[0], role: a[1], dot: a[9] === 'i' ? '#6B727D' : ST[a[9]][0], on: i === sel ? 'true' : 'false', bc: i === sel ? '#8C9BFF' : '#343B45', pick: () => { if (typeof cb === 'function') cb(i); } });
+    });
+
+    objs.push({ k: 11.5, draw: () => {
+      flat(0.8, 6.6, 4.6, 4.2, 0, '#D9A441'); flat(1.1, 6.9, 4.0, 3.6, 0.2, '#E6B657');
+      box(1.0, 7.2, 1.1, 3.2, 9, 0, '#66728A', '#56617A', '#48526A');
+      box(0.65, 7.2, 0.35, 3.2, 24, 0, '#727F99', '#5E6A84', '#4E5972');
+      box(0.65, 6.9, 1.45, 0.3, 16, 0, '#727F99', '#5E6A84', '#4E5972');
+      box(0.65, 10.4, 1.45, 0.3, 16, 0, '#727F99', '#5E6A84', '#4E5972');
+      box(1.15, 7.4, 0.9, 1.35, 3, 9, '#7C89A3', '#66728A', '#56617A'); box(1.15, 8.85, 0.9, 1.35, 3, 9, '#7C89A3', '#66728A', '#56617A');
+      box(3.0, 7.9, 1.3, 1.6, 2.5, 8, WOOD[0], WOOD[1], WOOD[2]);
+      box(3.1, 8.0, 1.1, 1.4, 8, 0, '#3A414C', '#2B313A', '#232830');
+      box(3.4, 8.3, 0.3, 0.3, 4, 10.5, '#F2F2F2', '#DADADA', '#C2C2C2');
+      ell(3.85, 9.0, 10.5, 0.22, '#E8C99A');
+    } });
+    plantBig(0.4, 0.4); plantBig(0.4, 5.6); plantBig(13.6, 0.6); plantBig(23.0, 6.8); plantBig(0.4, 16.6); plantBig(17.6, 16.8);
+
+    objs.push({ k: 16.6, draw: () => {
+      box(1, 12, 3.6, 3.6, 8, 0, '#2B3A44', '#22303A', '#1A262E');
+      ell(2.8, 13.8, 8, 1.55, 'rgba(79,209,181,0.18)', { bd: '3px solid #4FD1B5', sh: '0 0 24px rgba(79,209,181,0.65), inset 0 0 18px rgba(79,209,181,0.4)' });
+      ell(2.8, 13.8, 8, 1.0, 'transparent', { bd: '1.5px dashed rgba(79,209,181,0.7)' });
+      figure(2.8, 13.8, 8, '#2F86D6', '#2B2420', '#2B3240', '#F0D2B8', true, sel === 9, 'w');
+      ell(2.8, 13.8, 108, 0.7, 'transparent', { bd: '2px solid rgba(79,209,181,0.6)', sh: '0 0 10px rgba(79,209,181,0.5)' });
+    } });
+    objs.push({ k: 22.1, draw: () => {
+      [5.6, 6.6].forEach(rx => {
+        box(rx, 15.4, 0.9, 0.9, 72, 0, '#2A303B', '#1E232C', '#171B22');
+        for (let i = 0; i < 7; i++) { planeY(16.31, rx + 0.1, rx + 0.8, 8 + i * 9, 13 + i * 9, '#141820'); planeY(16.32, rx + 0.12, rx + 0.3, 9 + i * 9, 12 + i * 9, i % 2 ? '#4FD1B5' : '#5E9BEA'); planeY(16.32, rx + 0.36, rx + 0.42, 9 + i * 9, 12 + i * 9, '#8C9BFF'); }
+      });
+    } });
+    objs.push({ k: 28, draw: () => {
+      box(9, 16, 5.2, 1, 26, 0, '#F1EDE6', '#D9D4CB', '#BEB8AE');
+      for (let i = 0; i < 4; i++) planeY(17.01, 9.15 + i * 1.3, 10.3 + i * 1.3, 4, 22, '#E2DDD4');
+      box(9.3, 16.1, 0.8, 0.7, 18, 26, '#3A3F48', '#2C3038', '#22262C');
+      box(10.4, 16.1, 0.9, 0.7, 20, 26, '#D6483A', '#B23A2E', '#932F25');
+      planeY(16.81, 10.5, 11.2, 30, 40, '#2B2F36');
+      box(11.7, 16.2, 1.2, 0.6, 2, 26, '#C99A5E', '#A57C48', '#865F37');
+      ell(11.95, 16.5, 29, 0.17, '#E3A04A'); ell(12.35, 16.45, 29, 0.17, '#D9902F'); ell(12.7, 16.55, 29, 0.17, '#E3A04A');
+      box(13.3, 16.3, 0.25, 0.25, 7, 26, '#4FD1B5', '#3CA890', '#2E8A75'); box(13.7, 16.35, 0.25, 0.25, 7, 26, '#F2B544', '#C9922F', '#A57724');
+      [10, 11.6, 13.2].forEach(sx => { box(sx - 0.06, 17.4, 0.12, 0.12, 14, 0, '#3A414C', '#2B313A', '#232830'); ell(sx, 17.46, 14, 0.28, '#6B4E36', { sh: 'inset 0 -3px 0 rgba(0,0,0,0.25)' }); });
+    } });
+    objs.push({ k: 26.8, draw: () => {
+      box(20, 6.5, 0.6, 0.6, 28, 0, '#E6E9EE', '#CDD2D9', '#B4BAC3');
+      box(20.12, 6.62, 0.36, 0.36, 18, 28, 'rgba(110,180,240,0.9)', 'rgba(90,160,225,0.9)', 'rgba(70,140,205,0.9)');
+    } });
+    objs.push({ k: 16.4, draw: () => {
+      box(15.4, 0.02, 2.6, 0.6, 84, 0, '#8A6644', '#7A5A3C', '#5E452E');
+      const bc = ['#E5584A', '#5E9BEA', '#F2B544', '#4FB89A', '#9B7AE8', '#E8E2D6'];
+      for (let r = 0; r < 4; r++) { planeY(0.63, 15.5, 17.9, 8 + r * 19, 10 + r * 19, '#5E452E'); for (let b = 0; b < 9; b++) { const bx = 15.6 + b * 0.25; planeY(0.635, bx, bx + 0.18, 10 + r * 19, 10 + r * 19 + 12 + ((b + r) % 3) * 2, bc[(b + r * 2) % 6]); } }
+    } });
+    objs.push({ k: 21.5, draw: () => {
+      flat(19.2, 0.2, 4.6, 4.6, 0, '#3E4C66');
+      planeY(0.03, 20, 23, 55, 108, '#1A1F28'); planeY(0.04, 20.15, 22.85, 60, 103, 'linear-gradient(160deg,#4E79B0,#2B4466)');
+      [[20.6, 0.85], [21.6, 0.85], [22.6, 0.85]].forEach(c => { box(c[0] - 0.25, c[1] - 0.25, 0.5, 0.5, 10, 0, DARK[0], DARK[1], DARK[2]); box(c[0] - 0.25, c[1] - 0.35, 0.5, 0.1, 22, 0, DARK[0], DARK[1], DARK[2]); });
+      box(21.35, 2.1, 0.4, 0.4, 15, 0, '#6E5136', '#6E5136', '#5A4129');
+      box(20.2, 1.4, 2.8, 1.9, 3, 15, WOOD[0], WOOD[1], WOOD[2]);
+      [[20.6, 3.85], [21.6, 3.85], [22.6, 3.85]].forEach(c => { box(c[0] - 0.25, c[1] - 0.25, 0.5, 0.5, 10, 0, DARK[0], DARK[1], DARK[2]); box(c[0] - 0.25, c[1] + 0.25, 0.5, 0.1, 22, 0, DARK[0], DARK[1], DARK[2]); });
+      const g = 'rgba(160,205,240,0.16)';
+      planeX(19, 0, 3.4, 0, 120, g); planeX(19, 4.6, 5, 0, 120, g); planeY(5, 19, 24, 0, 120, g);
+      for (let i = 0; i <= 4; i++) planeY(5, 19 + i * 1.25 - 0.04, 19 + i * 1.25 + 0.04, 0, 120, '#8FB3D4');
+      planeX(19, 0, 5, 116, 122, '#8FB3D4'); planeY(5, 19, 24, 116, 122, '#8FB3D4'); planeX(19, 3.36, 3.44, 0, 120, '#8FB3D4'); planeX(19, 4.56, 4.64, 0, 120, '#8FB3D4');
+    } });
+    objs.push({ k: 31.5, draw: () => {
+      const g = 'rgba(160,205,240,0.16)';
+      planeY(13, 18.5, 24, 0, 110, g); planeX(18.5, 13, 18, 0, 110, g);
+      planeY(13, 18.5, 24, 105, 110, '#8FB3D4'); planeX(18.5, 13, 18, 105, 110, '#8FB3D4');
+      flat(19, 13.5, 4.6, 4.2, 0, '#D9A441'); flat(19.3, 13.8, 4.0, 3.6, 0.2, '#E6B657');
+      box(21.1, 15.4, 0.3, 0.3, 16, 0, '#6E5136', '#6E5136', '#5A4129');
+      ell(21.25, 15.55, 17, 0.95, '#D2A878', { sh: 'inset 0 -4px 0 rgba(0,0,0,0.2)' });
+      [[20.0, 15.5], [22.5, 15.5], [21.25, 14.3], [21.25, 16.8]].forEach(c => box(c[0] - 0.28, c[1] - 0.28, 0.56, 0.56, 12, 0, '#3E8A5A', '#337249', '#295D3B'));
+      box(23.0, 13.6, 0.6, 0.6, 12, 0, '#E7E2D8', '#CFC9BD', '#B3AD9F');
+      const c = P(23.3, 13.9, 28); rect(c[0] - 13, c[1] - 14, 26, 24, '#3DAA70', { rad: '50%', sh: 'inset -4px -4px 0 rgba(0,0,0,0.2)' });
+      planeY(18, 18.5, 24, 0, 110, g); planeX(24, 13, 18, 0, 110, g);
+      planeY(18, 18.5, 24, 105, 110, '#8FB3D4'); planeX(24, 13, 18, 105, 110, '#8FB3D4');
+      for (let i = 0; i <= 4; i++) planeY(18, 18.5 + i * 1.375 - 0.04, 18.5 + i * 1.375 + 0.04, 0, 110, '#8FB3D4');
+    } });
+    objs.push({ k: 7.8, draw: () => box(0.05, 2.6, 0.6, 3.6, 16, 0, '#2E3646', '#262D3A', '#1F2530') });
+
+    objs.sort((a, b) => a.k - b.k).forEach(o => o.draw());
+
+    const pt = (x, y, z) => { const p = P(x, y, z); return { x: p[0] + 'px', y: p[1] + 'px' }; };
+    const place = (pos, name, sub, dot, href, subc, bc) => Object.assign(pos, { name: name, sub: sub, dot: dot, href: href, subc: subc || '#A2A9B4', bc: bc || '#343B45' });
+    const st = this.state;
+    const zf = st.zf;
+    return {
+      shapes: S, bubbles: bubbles, agents: agents,
+      sx: (Number(this.props.shift || 0) + st.dx) + 'px',
+      sy: (Number(this.props.shiftY || 0) + st.dy) + 'px',
+      zoom: String(Number(this.props.zoom || 1) * zf),
+      cursor: st.drag ? 'grabbing' : 'grab',
+      down: (e) => this.setState({ drag: true, px: e.clientX, py: e.clientY, ox: st.dx, oy: st.dy }),
+      move: (e) => { if (this.state.drag) this.setState({ dx: this.state.ox + e.clientX - this.state.px, dy: this.state.oy + e.clientY - this.state.py }); },
+      up: () => { if (this.state.drag) this.setState({ drag: false }); },
+      wheel: (e) => this.setState({ zf: Math.max(0.6, Math.min(1.8, this.state.zf * (e.deltaY > 0 ? 0.92 : 1.08))) }),
+      zin: () => this.setState({ zf: Math.min(1.8, zf * 1.15) }),
+      zout: () => this.setState({ zf: Math.max(0.6, zf / 1.15) }),
+      reset: () => this.setState({ zf: 1, dx: 0, dy: 0 }),
+      places: [
+        place(pt(0, 4.8, 150), 'Task board', '2 active · 3 todo · 1 review', '#8C9BFF', 'Tasks.dc.html', '#AEB8FF'),
+        place(pt(2.8, 13.8, 128), 'Cyfervoid', 'Orchestrator · delegating', '#4FD1B5', 'Orchestrator.dc.html', '#4FD1B5', '#2D5E54'),
+        place(pt(6.6, 16.3, 96), 'Project files', String(this.props.folderPath || 'D:\\alter-ego-projects\\ryscript'), '#6B727D', 'Workspace.dc.html'),
+        place(pt(11.6, 16.5, 66), 'Coffee', 'Fresh pot', '#6B727D', 'Workspace.dc.html'),
+        place(pt(21.5, 2.5, 140), 'Meeting room', 'Free · next standup 4:00 PM', '#8C9BFF', 'Orchestrator.dc.html'),
+        place(pt(21.25, 15.5, 126), 'Break area', 'Idle agents rest here', '#6B727D', 'Workspace.dc.html')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

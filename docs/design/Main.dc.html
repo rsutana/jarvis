@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lobby</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D10}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{position:relative;height:100vh;min-height:760px;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0B0D10;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.drawer{position:absolute;top:72px;right:16px;bottom:96px;max-width:calc(100% - 32px);background:rgba(17,20,25,0.97);border:1px solid #2F353E;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.dh{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #262B33}
+.x{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#A2A9B4;text-decoration:none;font-size:20px}
+.x:hover{background:#1F242C;color:#fff}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn:hover{background:#222731;color:#fff}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.btn.icon{width:40px;padding:0}
+.card{background:#14171C;border:1px solid #272C34;border-radius:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;border:1px solid #2F353E;color:#C2C8D1;white-space:nowrap;background:transparent;font-family:inherit}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+.field{width:100%;min-height:40px;background:#0F1216;border:1px solid #2F353E;border-radius:8px;color:#E9EBEE;font:inherit;padding:8px 12px}
+.stat{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #22262D;text-decoration:none;color:inherit;min-height:40px}
+</style>
+</helmet>
+<div class="app">
+  <div style="position: absolute; inset: 0"><dc-import name="LobbyScene" shift="-200" hint-size="100%,100%"></dc-import></div>
+
+  <section aria-label="Today" style="position: absolute; top: 72px; left: 16px; width: 250px; max-width: calc(100% - 32px); padding: 14px 16px; background: rgba(17, 20, 25, 0.94); border: 1px solid #2F353E; border-radius: 14px">
+    <div class="lbl" style="margin-bottom: 4px">Today</div>
+    <a class="stat" href="Inbox.dc.html"><span>Needs you</span><b style="color: #F2B544">4</b></a>
+    <a class="stat" href="Workspace.dc.html"><span>Agents working</span><b style="color: #4FD1B5">2 / 12</b></a>
+    <a class="stat" href="Tasks.dc.html"><span>Tasks done</span><b>18</b></a>
+    <a class="stat" href="AIAccounts.dc.html" style="border-bottom: 0"><span>Budget used</span><b>41%</b></a>
+  </section>
+
+  <aside class="drawer" aria-label="Jarvis chat" style="width: 420px">
+    <div class="dh">
+      <span style="width: 30px; height: 30px; border-radius: 9px; background: #8C9BFF; color: #0D0F12; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">J</span>
+      <div style="flex: 1; min-width: 0"><div style="font-weight: 600">Jarvis <span class="faint" style="font-weight: 400; font-size: 12.5px">Main assistant</span></div><div class="mono faint" style="font-size: 11px">GPT-5.6-Sol · medium</div></div>
+      <a class="btn sm ghost" href="JarvisChat.dc.html">Expand</a>
+      <a class="x" href="Main.dc.html" aria-label="Close">×</a>
+    </div>
+    <div style="padding: 12px 16px 0; display: flex; gap: 8px">
+      <label for="conv" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Conversation</label>
+      <select id="conv" class="field" style="min-height: 36px; font-size: 13px"><option>Status of all workspaces</option><option>Weekly Cyfervoid blog</option></select>
+      <a class="btn sm" href="JarvisChat.dc.html" style="min-height: 36px">+ New</a>
+    </div>
+    <div style="margin: 12px 16px 0; padding: 12px; border-radius: 10px; background: #1B1F2B; border: 1px solid #343C66; font-size: 13px; display: flex; gap: 10px; align-items: center">
+      <span style="font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; background: #8C9BFF; color: #0D0F12">AWAY</span>
+      <span style="flex: 1"><b style="font-weight: 600; color: #C9D0FF">While you were away:</b> <span class="muted">3 tasks finished · 1 merge waiting</span></span>
+      <a class="btn sm" href="Inbox.dc.html">Review</a>
+    </div>
+    <div style="flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px">
+      <div style="align-self: flex-end; max-width: 85%; background: #262B36; padding: 9px 12px; border-radius: 12px 12px 2px 12px">Status of all workspaces?</div>
+      <div style="max-width: 94%; background: #161A20; border: 1px solid #262A31; padding: 10px 12px; border-radius: 12px 12px 12px 2px">
+        <b>Ryscript</b> is busy: Rex just merged 5 new modules and Kei passed QA. <b>News website</b> is idle. <b>Alumni website</b> still needs an orchestrator. Want me to set one up?
+      </div>
+      <div class="card" style="padding: 12px; border-color: #343C66">
+        <div class="lbl" style="color: #AEB8FF">Proposed plan · Alumni website</div>
+        <ol style="margin: 8px 0 0; padding-left: 18px; color: #C9CFD8; display: flex; flex-direction: column; gap: 4px">
+          <li>Create orchestrator “Alma” on Sonnet 5.5</li>
+          <li>Assign an existing agent as Frontend dev</li>
+          <li>Scan the repo and write context.md</li>
+        </ol>
+        <div style="display: flex; gap: 8px; margin-top: 12px"><button class="btn sm pri" type="button">Approve</button><a class="btn sm" href="JarvisChat.dc.html">Edit plan</a></div>
+      </div>
+    </div>
+    <div style="padding: 0 16px 8px; display: flex; flex-wrap: wrap; gap: 6px">
+      <button class="chip" type="button" style="cursor: pointer; min-height: 32px">What can you do?</button>
+      <button class="chip" type="button" style="cursor: pointer; min-height: 32px">Create a workspace…</button>
+      <button class="chip" type="button" style="cursor: pointer; min-height: 32px">Status of all workspaces</button>
+    </div>
+    <form style="padding: 10px 16px 16px; display: flex; gap: 8px; align-items: flex-end; border-top: 1px solid #22262D">
+      <button class="btn icon ghost" type="button" aria-label="Attach file"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 11l-8.5 8.5a5 5 0 01-7-7L14 4a3.5 3.5 0 015 5l-8.5 8.5a2 2 0 01-3-3L15 7"></path></svg></button>
+      <button class="btn icon ghost" type="button" aria-label="Voice input"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0014 0M12 18v3"></path></svg></button>
+      <label for="jmsg" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Message Jarvis</label>
+      <textarea id="jmsg" class="field" rows="2" placeholder="Message Jarvis… (paste or drop files)" style="resize: none; flex: 1"></textarea>
+      <button class="btn icon pri" type="button" aria-label="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></button>
+    </form>
+  </aside>
+
+  <div style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Hud" mode="global" active="Chat" page="Lobby" status="3 workspaces" hint-size="100%,100%"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

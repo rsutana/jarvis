@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foundations for coding agents</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0F12}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0D0F12;font-size:14px;line-height:1.45;min-height:1300px}
+.app *{box-sizing:border-box}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.card{background:#14171C;border:1px solid #272C34;border-radius:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;border:1px solid #2F353E;color:#C2C8D1;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.av{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#0D0F12;flex:none}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+.field{width:100%;min-height:40px;background:#0F1216;border:1px solid #2F353E;border-radius:8px;color:#E9EBEE;font:inherit;padding:8px 12px}
+.sw{display:flex;flex-direction:column;gap:6px}
+.sw .b{height:56px;border-radius:10px;border:1px solid #2F353E}
+h2.s{margin:0 0 14px;font-size:15px;font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{text-align:left;font-weight:600;color:#8A919C;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid #22262D}
+td{padding:8px 12px;border-bottom:1px solid #1E2228;vertical-align:top}
+.box{border:1px dashed #3A414C;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#A2A9B4;text-align:center;padding:6px}
+</style>
+</helmet>
+<div class="app">
+  <div style="max-width: 1360px; margin: 0 auto; padding: 40px 32px 56px; display: flex; flex-direction: column; gap: 28px">
+    <header>
+      <div class="lbl" style="color: #AEB8FF">Jarvis · Electron app</div>
+      <h1 style="margin: 6px 0 0; font-size: 32px; font-weight: 600; letter-spacing: -0.01em">Foundations for implementation</h1>
+      <p class="muted" style="margin: 6px 0 0; max-width: 760px">Tokens, components, layout and the data model behind every screen on this canvas. Build these as shared React components first, then compose the screens.</p>
+    </header>
+
+    <section class="card" style="padding: 22px">
+      <h2 class="s">Colour tokens</h2>
+      <div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 12px">
+        <sc-for list="{{colors}}" as="c" hint-placeholder-count="16">
+          <div class="sw"><div class="b" style="background: {{c.hex}}"></div><div style="font-size: 12.5px; font-weight: 500">{{c.name}}</div><div class="mono faint" style="font-size: 11px">{{c.hex}}</div></div>
+        </sc-for>
+      </div>
+    </section>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px">
+      <section class="card" style="flex: 1 1 420px; padding: 22px">
+        <h2 class="s">Status semantics</h2>
+        <table>
+          <thead><tr><th scope="col">State</th><th scope="col">Token</th><th scope="col">Used for</th></tr></thead>
+          <tbody>
+            <tr><td><span class="chip"><span class="dot" style="background: #4FD1B5"></span>Working</span></td><td class="mono">status.working</td><td class="muted">Agent running, task in progress, connected, allowed</td></tr>
+            <tr><td><span class="chip"><span class="dot" style="background: #F2B544"></span>Needs you</span></td><td class="mono">status.review</td><td class="muted">Review column, approvals, "ask before sending", warn 85%</td></tr>
+            <tr><td><span class="chip"><span class="dot" style="background: #FF8A7A"></span>Blocked</span></td><td class="mono">status.blocked</td><td class="muted">Blocked/failed, stop 89%, destructive actions</td></tr>
+            <tr><td><span class="chip"><span class="dot" style="background: #8C9BFF"></span>Done</span></td><td class="mono">status.done</td><td class="muted">Done, merged; also Jarvis identity &amp; primary action</td></tr>
+            <tr><td><span class="chip"><span class="dot" style="background: #6B727D"></span>Idle</span></td><td class="mono">status.idle</td><td class="muted">Idle agent, queued, off</td></tr>
+          </tbody>
+        </table>
+        <p class="faint" style="font-size: 12px; margin: 10px 0 0">Always pair colour with a text label; never colour alone.</p>
+      </section>
+      <section class="card" style="flex: 1 1 420px; padding: 22px">
+        <h2 class="s">Type · IBM Plex Sans / Plex Mono</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: baseline; gap: 16px"><span class="mono faint" style="width: 120px; font-size: 11px">display 32/600</span><span style="font-size: 32px; font-weight: 600">Command center</span></div>
+          <div style="display: flex; align-items: baseline; gap: 16px"><span class="mono faint" style="width: 120px; font-size: 11px">title 22/600</span><span style="font-size: 22px; font-weight: 600">Pricing table module</span></div>
+          <div style="display: flex; align-items: baseline; gap: 16px"><span class="mono faint" style="width: 120px; font-size: 11px">body 14/400</span><span>Agents work only inside this folder.</span></div>
+          <div style="display: flex; align-items: baseline; gap: 16px"><span class="mono faint" style="width: 120px; font-size: 11px">small 12.5/400</span><span class="faint" style="font-size: 12.5px">Resets in 3h 12m</span></div>
+          <div style="display: flex; align-items: baseline; gap: 16px"><span class="mono faint" style="width: 120px; font-size: 11px">label 11/600 caps</span><span class="lbl">Workspaces</span></div>
+          <div style="display: flex; align-items: baseline; gap: 16px"><span class="mono faint" style="width: 120px; font-size: 11px">mono 12.5</span><span class="mono" style="font-size: 12.5px">agent/rex/t-076-pricing-table</span></div>
+        </div>
+        <p class="faint" style="font-size: 12px; margin: 14px 0 0">Spacing 4-pt scale: 4 · 8 · 12 · 16 · 20 · 24 · 32. Radii: 8 controls, 10 rows, 12 cards, 999 chips.</p>
+      </section>
+    </div>
+
+    <section class="card" style="padding: 22px">
+      <h2 class="s">Core components</h2>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px">
+        <div style="display: flex; flex-direction: column; gap: 10px"><div class="lbl">Button</div><div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn pri" type="button">Primary</button><button class="btn" type="button">Default</button><button class="btn ghost" type="button">Ghost</button></div><button class="btn sm" type="button" style="align-self: flex-start; color: #FF9C8E; border-color: #5A2E2A">Destructive</button></div>
+        <div style="display: flex; flex-direction: column; gap: 10px"><div class="lbl">Chip / StatusChip</div><div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="chip">Mission M-013</span><span class="chip mono">Sonnet 5.5</span><span class="chip" style="border-color: #5A4A22; color: #F2B544">Approval</span><span class="chip"><span class="dot" style="background: #4FD1B5"></span>Working</span></div></div>
+        <div style="display: flex; flex-direction: column; gap: 10px"><div class="lbl">Avatar · AgentDesk</div><div style="display: flex; gap: 8px; align-items: center"><span class="av" style="background: #5ED0C0">R</span><span class="av" style="background: #8C9BFF; border-radius: 9px">J</span><span class="av" style="background: #4FD1B5; box-shadow: 0 0 0 4px #1B3A33">Cy</span></div><span class="faint" style="font-size: 12px">Circle = agent, rounded square = Jarvis, ring = orchestrator</span></div>
+        <div style="display: flex; flex-direction: column; gap: 10px"><div class="lbl">Field</div><label for="fx" style="font-size: 12.5px; color: #A2A9B4">Label above</label><input id="fx" class="field" value="Value"></div>
+        <div style="display: flex; flex-direction: column; gap: 10px"><div class="lbl">ApprovalCard</div><div class="card" style="padding: 12px; border-color: #343C66"><div class="lbl" style="color: #AEB8FF">Proposed plan</div><div style="font-size: 13px; margin: 4px 0 10px">3 tasks · Alumni website</div><div style="display: flex; gap: 6px"><button class="btn sm pri" type="button">Approve</button><button class="btn sm" type="button">Edit</button></div></div></div>
+        <div style="display: flex; flex-direction: column; gap: 10px"><div class="lbl">UsageMeter</div><div style="height: 8px; background: #22272F; border-radius: 4px; position: relative"><div style="width: 62%; height: 8px; background: #4FD1B5; border-radius: 4px"></div><span style="position: absolute; left: 85%; top: -3px; width: 2px; height: 14px; background: #F2B544"></span><span style="position: absolute; left: 89%; top: -3px; width: 2px; height: 14px; background: #FF8A7A"></span></div><span class="faint" style="font-size: 12px">Ticks at warn (85%) and stop (89%)</span></div>
+        <div style="display: flex; flex-direction: column; gap: 10px"><div class="lbl">TaskCard</div><div style="padding: 12px; border-radius: 10px; background: #16191F; border: 1px solid #2D5E54; font-size: 12.5px"><div class="mono faint" style="font-size: 11px">T-076</div><div style="font-weight: 500; font-size: 13.5px">Pricing table module</div><div style="color: #4FD1B5">Writing fields.json · 64%</div></div></div>
+        <div style="display: flex; flex-direction: column; gap: 10px"><div class="lbl">Timeline step</div><div style="display: flex; gap: 10px; font-size: 13px"><span class="dot" style="width: 10px; height: 10px; margin-top: 5px; background: #F2B544"></span><span>Ran hs-lint <span class="mono faint" style="font-size: 11px">12:40</span><br><span class="muted">2 warnings, continuing</span></span></div></div>
+      </div>
+    </section>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px">
+      <section class="card" style="flex: 1 1 420px; padding: 22px">
+        <h2 class="s">Isometric shell (every screen)</h2>
+        <div style="position: relative; height: 250px; border-radius: 10px; background: #0B0D10; border: 1px solid #2F353E; overflow: hidden">
+          <div class="box" style="position: absolute; inset: 0; border-radius: 10px; align-items: flex-start; justify-content: flex-start; padding: 70px 14px">Scene layer · LobbyScene (campus) or OfficeScene (workspace) · full window, pans/zooms, shifts left when a wide drawer opens</div>
+          <div class="box" style="position: absolute; top: 8px; left: 8px; right: 8px; height: 30px; background: #14171C">Hud · top bar: J · breadcrumb · search · I'm away · status pill</div>
+          <div class="box" style="position: absolute; top: 46px; right: 8px; bottom: 50px; width: 42%; background: #14171C; border-style: solid">Drawer · 360–1020px · one at a time · × returns to the scene</div>
+          <div class="box" style="position: absolute; bottom: 8px; left: 25%; right: 25%; height: 34px; background: #14171C">Hud · dock (global or workspace set)</div>
+        </div>
+        <ul class="muted" style="font-size: 12.5px; margin: 14px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px">
+          <li>Projection: x = ox + (gx − gy)·32, y = oy + (gx + gy)·16 − z. Paint back-to-front by gx + gy.</li>
+          <li>Buildings = workspaces (roof colour, lit windows = working). Desks = agents; orchestrator gets the ringed platform.</li>
+          <li>Labels stay HTML above the scene so they are clickable, focusable and readable at any zoom.</li>
+          <li>Global shortcuts: Ctrl K search, J focus Jarvis, Esc closes the drawer. Window min 1100×720.</li>
+        </ul>
+      </section>
+      <section class="card" style="flex: 1 1 520px; padding: 22px; overflow-x: auto">
+        <h2 class="s">Data model (minimum fields)</h2>
+        <table>
+          <thead><tr><th scope="col">Entity</th><th scope="col">Key fields</th><th scope="col">Screens</th></tr></thead>
+          <tbody>
+            <sc-for list="{{model}}" as="m" hint-placeholder-count="10">
+              <tr><td style="font-weight: 600">{{m.e}}</td><td class="mono" style="font-size: 11.5px; color: #C9CFD8">{{m.f}}</td><td class="faint">{{m.s}}</td></tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1650}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const c = (name, hex) => ({ name, hex });
+    return {
+      colors: [
+        c('bg.app', '#0D0F12'), c('bg.sidebar', '#101317'), c('bg.card', '#14171C'), c('bg.raised', '#1A1E24'),
+        c('border', '#272C34'), c('border.strong', '#2F353E'), c('text', '#E9EBEE'), c('text.muted', '#A2A9B4'),
+        c('text.faint', '#8A919C'), c('accent', '#8C9BFF'), c('accent.link', '#AEB8FF'), c('status.working', '#4FD1B5'),
+        c('status.review', '#F2B544'), c('status.blocked', '#FF8A7A'), c('status.idle', '#6B727D'), c('accent.tint', '#1B1F2B')
+      ],
+      model: [
+        { e: 'Jarvis', f: 'accountId, model, thinking, autonomy, awayMode', s: '01 02 11' },
+        { e: 'Workspace', f: 'id, name, color, goal, folderPath, gitBase, branchPattern, mergePolicy', s: '01 04 05' },
+        { e: 'Orchestrator', f: 'workspaceId, agentId, autonomy, parallelLimit, retries, routingRules[]', s: '06' },
+        { e: 'Agent', f: 'id, name, role, look, accountId, model, thinking, instructions, skills[], guardrails', s: '05 10' },
+        { e: 'Mission', f: 'id, source(jarvis|automation|user), workspaceId, steps[], status, approvals[]', s: '02 06' },
+        { e: 'Task', f: 'id, missionId, title, assigneeId, status, priority, dependsOn[], criteria[]', s: '07 08' },
+        { e: 'Run', f: 'taskId, startedAt, events[], tokens, branch, report, exitState', s: '08' },
+        { e: 'Change', f: 'branch, taskId, commits, additions, deletions, qaStatus, mergeState', s: '09' },
+        { e: 'ApprovalRequest', f: 'id, kind(send|merge|plan|publish|spend), payload, requestedBy, policy, state', s: '03' },
+        { e: 'Integration', f: 'id, type(mcp|http), tools[{name, policy}], agentIds[], workspaceScope', s: '12' },
+        { e: 'AIAccount', f: 'id, provider, authType, window, usagePct, resetAt, warnAt, stopAt', s: '11' },
+        { e: 'Automation', f: 'id, trigger{type, schedule|event}, target, prompt, overLimitPolicy, enabled', s: '13' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

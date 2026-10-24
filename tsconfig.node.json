@@ -1,0 +1,10 @@
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
+  "include": ["electron.vite.config.ts", "electron/**/*", "src/shared/**/*"],
+  "compilerOptions": {
+    "composite": true,
+    "lib": ["ESNext"],
+    "baseUrl": ".",
+    "paths": { "@shared/*": ["src/shared/*"] }
+  }
+}

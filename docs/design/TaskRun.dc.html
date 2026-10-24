@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Task run detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D10}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{position:relative;height:100vh;min-height:760px;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0B0D10;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.drawer{position:absolute;top:72px;right:16px;bottom:96px;max-width:calc(100% - 32px);background:rgba(17,20,25,0.97);border:1px solid #2F353E;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.dh{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 20px;border-bottom:1px solid #262B33;flex-wrap:wrap;min-height:60px}
+.dh h1{margin:0;font-size:17px;font-weight:600}
+.x{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#A2A9B4;text-decoration:none;font-size:20px}
+.x:hover{background:#1F242C;color:#fff}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn:hover{background:#222731;color:#fff}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.card{background:#14171C;border:1px solid #272C34;border-radius:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;border:1px solid #2F353E;color:#C2C8D1;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.av{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#0D0F12;flex:none}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+.field{width:100%;min-height:40px;background:#0F1216;border:1px solid #2F353E;border-radius:8px;color:#E9EBEE;font:inherit;padding:8px 12px}
+.sub{display:flex;gap:2px;border-bottom:1px solid #22262D}
+.sub button{min-height:44px;padding:0 14px;border:0;border-bottom:2px solid transparent;background:transparent;color:#A2A9B4;font:inherit;font-size:13.5px;cursor:pointer}
+.sub button[aria-selected=true]{color:#E9EBEE;border-bottom-color:#8C9BFF}
+.tl{display:flex;gap:12px;padding-bottom:14px}
+.term{background:#0A0C0F;border:1px solid #22262D;border-radius:10px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.65;color:#C9CFD8;white-space:pre-wrap;overflow-x:auto}
+dl.kv{display:grid;grid-template-columns:96px 1fr;gap:9px 12px;margin:0;font-size:13px}
+dl.kv dt{color:#8A919C}dl.kv dd{margin:0}
+</style>
+</helmet>
+<div class="app">
+  <div style="position: absolute; inset: 0"><dc-import name="OfficeScene" shift="-380" selected="0" hint-size="100%,100%"></dc-import></div>
+
+  <aside class="drawer" aria-label="Task run" style="width: 980px">
+    <div class="dh">
+      <span class="mono faint">T-076</span>
+      <h1>Pricing table module</h1>
+      <span class="chip" style="border-color: #2D5E54; color: #4FD1B5"><span class="dot" style="background: #4FD1B5"></span>Running · 14m</span>
+      <span class="chip">High</span>
+      <div style="flex: 1"></div>
+      <button class="btn sm" type="button">Message Rex</button>
+      <button class="btn sm" type="button">Reassign</button>
+      <button class="btn sm" type="button" style="color: #FF9C8E; border-color: #5A2E2A">Stop run</button>
+      <a class="x" href="Tasks.dc.html" aria-label="Close">×</a>
+    </div>
+    <div style="flex: 1; min-height: 0; display: flex; flex-wrap: wrap; overflow: auto">
+      <section aria-label="Run" style="flex: 999 1 520px; min-width: 0; padding: 4px 20px 18px; display: flex; flex-direction: column; gap: 14px">
+        <div class="sub" role="tablist" aria-label="Run views">
+          <sc-for list="{{views}}" as="v" hint-placeholder-count="4">
+            <button type="button" role="tab" aria-selected="{{v.on}}" onClick="{{v.go}}">{{v.name}}</button>
+          </sc-for>
+        </div>
+        <sc-if value="{{isT}}" hint-placeholder-val="{{true}}">
+          <div style="display: flex; flex-direction: column">
+            <sc-for list="{{steps}}" as="s" hint-placeholder-count="6">
+              <div class="tl">
+                <span style="display: flex; flex-direction: column; align-items: center; gap: 4px"><span class="dot" style="width: 10px; height: 10px; margin-top: 5px; background: {{s.c}}"></span><span style="flex: 1; width: 1px; background: #262A31"></span></span>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; gap: 8px; align-items: baseline"><span style="font-weight: 500; font-size: 13.5px">{{s.title}}</span><span class="mono faint" style="font-size: 11px">{{s.t}}</span></div>
+                  <sc-if value="{{s.hasCode}}" hint-placeholder-val="{{false}}"><div class="term">{{s.code}}</div></sc-if>
+                  <sc-if value="{{s.hasText}}" hint-placeholder-val="{{false}}"><div class="muted" style="font-size: 13px">{{s.text}}</div></sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{isR}}" hint-placeholder-val="{{false}}">
+          <div class="card" style="padding: 16px; font-size: 13.5px; color: #D7DBE1; display: flex; flex-direction: column; gap: 10px">
+            <div class="lbl">Agent report · draft until the run ends</div>
+            <p style="margin: 0">Built <span class="mono">pricing-table.module</span> with 3 tiers, a monthly/yearly toggle and a highlighted plan. Fields are editable in the HubSpot page editor.</p>
+            <p style="margin: 0" class="muted">Open question for QA: the yearly toggle uses a small inline script. Check it passes the theme's CSP.</p>
+          </div>
+        </sc-if>
+        <sc-if value="{{isF}}" hint-placeholder-val="{{false}}">
+          <div class="card mono" style="padding: 6px 0; font-size: 12.5px">
+            <div style="display: flex; justify-content: space-between; padding: 8px 14px"><span>pricing-table.module/module.html</span><span style="color: #4FD1B5">+188</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 14px"><span>pricing-table.module/module.css</span><span style="color: #4FD1B5">+242</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 14px"><span>pricing-table.module/fields.json</span><span style="color: #4FD1B5">+131</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 14px"><span>pricing-table.module/meta.json</span><span style="color: #4FD1B5">+14</span></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{isX}}" hint-placeholder-val="{{false}}">
+          <div class="term" style="min-height: 280px">$ npx hs-lint modules/pricing-table.module
+✔ module.html  valid HubL
+✔ fields.json  31 fields, 0 errors
+⚠ module.css   2 warnings (unused selector .tier--ghost)
+$ git commit -m "T-076: pricing table fields"
+[agent/rex/t-076-pricing-table 3f9c2a1] 2 files changed, 319 insertions(+)
+▌</div>
+        </sc-if>
+        <form class="card" style="padding: 8px; display: flex; gap: 8px; align-items: center; margin-top: auto">
+          <label for="steer" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Steer this run</label>
+          <input id="steer" class="field" placeholder="Steer Rex mid-run… (sent at the next step)" style="border: none; background: transparent">
+          <button class="btn sm pri" type="button">Send</button>
+        </form>
+      </section>
+      <section aria-label="Task details" style="flex: 1 1 280px; border-left: 1px solid #22262D; background: #13161B; padding: 18px; display: flex; flex-direction: column; gap: 16px">
+        <dl class="kv">
+          <dt>Assignee</dt><dd style="display: flex; gap: 8px; align-items: center"><span class="av" style="width: 22px; height: 22px; font-size: 10px; background: #5ED0C0">R</span>Rex</dd>
+          <dt>Created by</dt><dd>Cyfervoid (orchestrator)</dd>
+          <dt>Mission</dt><dd>M-013 · Daily module batch</dd>
+          <dt>Branch</dt><dd class="mono" style="font-size: 12px; word-break: break-all">agent/rex/t-076-pricing-table</dd>
+          <dt>Model</dt><dd>Sonnet 5.5 · Claude Code LS</dd>
+          <dt>Usage</dt><dd>212k tokens · ≈ 1.4% of limit</dd>
+          <dt>Depends on</dt><dd><span class="mono">T-072</span> <span style="color: #8C9BFF">done</span></dd>
+          <dt>Blocks</dt><dd><span class="mono">T-077</span> QA</dd>
+        </dl>
+        <div>
+          <div class="lbl" style="margin-bottom: 8px">Acceptance criteria</div>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+            <label style="display: flex; gap: 8px"><input type="checkbox" checked="" style="accent-color: #8C9BFF"> 3 editable tiers</label>
+            <label style="display: flex; gap: 8px"><input type="checkbox" checked="" style="accent-color: #8C9BFF"> Monthly / yearly toggle</label>
+            <label style="display: flex; gap: 8px"><input type="checkbox" style="accent-color: #8C9BFF"> README with usage</label>
+            <label style="display: flex; gap: 8px"><input type="checkbox" style="accent-color: #8C9BFF"> hs-lint with 0 errors</label>
+          </div>
+        </div>
+        <div><div class="lbl" style="margin-bottom: 8px">Context given</div><div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="chip mono">context.md</span><span class="chip mono">T-072 report</span><span class="chip">Module Dev skill</span></div></div>
+        <a class="btn" href="Changes.dc.html" style="margin-top: auto">View branch in Changes</a>
+      </section>
+    </div>
+  </aside>
+
+  <div style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Hud" mode="workspace" active="Activity" ws="Ryscript" page="T-076" status="2 working" hint-size="100%,100%"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { v: 0 }; }
+  renderVals() {
+    const v = this.state.v;
+    const views = ['Transcript', 'Report', 'Files (4)', 'Terminal'].map((name, i) => ({ name, on: i === v ? 'true' : 'false', go: () => this.setState({ v: i }) }));
+    const s = (title, t, c, text, code) => ({ title, t, c, text: text || '', hasText: !!text, code: code || '', hasCode: !!code });
+    return {
+      views, isT: v === 0, isR: v === 1, isF: v === 2, isX: v === 3,
+      steps: [
+        s('Received task from Cyfervoid', '12:31', '#8C9BFF', 'Build a pricing table module. Match the breadcrumb-trail.module structure.'),
+        s('Read 6 files', '12:31', '#6B727D', '', 'modules/breadcrumb-trail.module/*\ncontext.md'),
+        s('Created module skeleton', '12:34', '#6B727D', '', '+ modules/pricing-table.module/meta.json\n+ modules/pricing-table.module/module.html'),
+        s('Ran hs-lint', '12:40', '#F2B544', '2 CSS warnings, no errors. Continuing.'),
+        s('Committed 3f9c2a1', '12:41', '#6B727D', 'T-076: pricing table fields'),
+        s('Writing fields.json…', 'now', '#4FD1B5', 'Adding tier repeater group (name, price, features, CTA).')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

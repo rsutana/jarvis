@@ -1,0 +1,100 @@
+{
+  "$schema": "Jarvis office layout v1 — mirrors OfficeScene.dc.html exactly",
+  "units": {
+    "world": "1 unit = 1 floor tile = 1 metre",
+    "axes": "x = along the back-right wall (design gx), z = along the back-left wall (design gy), y = up",
+    "origin": "back corner where the two walls meet, on the floor",
+    "position": "[x, z] is the footprint CENTRE of the object unless noted; y is 0 (floor) unless given",
+    "rotationY": "degrees; 0 = model front faces +z (towards the camera side), 90 = faces +x",
+    "size": "[width x, depth z, height y] in metres — scale GLBs to fit this box"
+  },
+  "camera": {
+    "type": "OrthographicCamera",
+    "isoAngles": { "yawDeg": 45, "pitchDeg": -35.264 },
+    "target": [12, 0, 9],
+    "zoom": { "default": 1, "min": 0.6, "max": 1.8 },
+    "drawerShiftPx": "pass the drawer width; pan the target so the room stays visible left of the drawer (Workspace 360px → -150px, Orchestrator/TaskRun 980px → -380px, Tasks/Changes 1020px → -400px)"
+  },
+  "room": {
+    "size": [24, 18],
+    "floor": { "tile": 1, "colors": ["#5E6672", "#59616D"], "pattern": "checker", "slabThickness": 0.3 },
+    "walls": [
+      { "id": "wall-back-right", "from": [0, 0], "to": [24, 0], "height": 3.2, "thickness": 0.4, "innerColor": "#424A5E", "capColor": "#58627A", "trim": { "color": "#2FA58A", "height": 0.15 } },
+      { "id": "wall-back-left", "from": [0, 0], "to": [0, 18], "height": 3.2, "thickness": 0.4, "innerColor": "#3B4357", "capColor": "#58627A", "trim": { "color": "#2FA58A", "height": 0.15 } }
+    ],
+    "trimColorSource": "workspace.color",
+    "windows": [
+      { "wall": "wall-back-right", "from": 2.5, "to": 5.1, "y": [0.95, 2.65], "model": "window_double.glb" },
+      { "wall": "wall-back-right", "from": 6.0, "to": 8.6, "y": [0.95, 2.65], "model": "window_double.glb" },
+      { "wall": "wall-back-right", "from": 9.5, "to": 12.1, "y": [0.95, 2.65], "model": "window_double.glb" },
+      { "wall": "wall-back-right", "from": 13.0, "to": 15.6, "y": [0.95, 2.65], "model": "window_double.glb" },
+      { "wall": "wall-back-left", "from": 10.0, "to": 12.4, "y": [0.95, 2.65], "model": "window_double.glb" },
+      { "wall": "wall-back-left", "from": 13.4, "to": 15.8, "y": [0.95, 2.65], "model": "window_double.glb" }
+    ]
+  },
+  "desks": [
+    { "slot": 0, "agentId": "rex",   "desk": [8.2, 12.6],  "chair": [7.25, 13.75],  "stand": [8.2, 13.85],  "mug": "#F2B544", "deskPlant": false },
+    { "slot": 1, "agentId": "kei",   "desk": [8.2, 3.6],   "chair": [7.25, 4.75],   "stand": [8.2, 4.85],   "mug": "#5E9BEA", "deskPlant": true },
+    { "slot": 2, "agentId": "shake", "desk": [12.7, 3.6],  "chair": [11.75, 4.75],  "stand": [12.7, 4.85],  "mug": "#E5584A", "deskPlant": false },
+    { "slot": 3, "agentId": "mika",  "desk": [17.2, 3.6],  "chair": [16.25, 4.75],  "stand": [17.2, 4.85],  "mug": "#F2B544", "deskPlant": true },
+    { "slot": 4, "agentId": "ivo",   "desk": [12.7, 8.1],  "chair": [11.75, 9.25],  "stand": [12.7, 9.35],  "mug": "#4FD1B5", "deskPlant": false },
+    { "slot": 5, "agentId": "nia",   "desk": [17.2, 8.1],  "chair": [16.25, 9.25],  "stand": [17.2, 9.35],  "mug": "#E5584A", "deskPlant": true },
+    { "slot": 6, "agentId": "tomo",  "desk": [8.2, 8.1],   "chair": [7.25, 9.25],   "stand": [8.2, 9.35],   "mug": "#9B7AE8", "deskPlant": false },
+    { "slot": 7, "agentId": "lux",   "desk": [12.7, 12.6], "chair": [11.75, 13.75], "stand": [12.7, 13.85], "mug": "#4FD1B5", "deskPlant": true },
+    { "slot": 8, "agentId": "wren",  "desk": [17.2, 12.6], "chair": [16.25, 13.75], "stand": [17.2, 13.85], "mug": "#F2B544", "deskPlant": false }
+  ],
+  "deskModel": { "model": "desk_dual_monitor.glb", "size": [2.4, 1.2, 0.75], "rotationY": 0, "monitorScreenMaterial": "screen", "screenWorking": "#4FD1B5", "screenIdle": "#2B3646" },
+  "chairModel": { "model": "office_chair.glb", "size": [0.64, 0.64, 1.0], "rotationY": 0 },
+  "characterModel": { "model": "character_base.glb", "height": 1.6, "variants": "tint shirt / hair / skin from Agent.look; toggle glasses node", "idleClip": "idle", "workingClip": "typing", "blockedClip": "idle_worried" },
+  "orchestrator": { "agentId": "cyfervoid", "pad": { "model": "orchestrator_pad.glb", "position": [2.8, 13.8], "size": [3.6, 3.6, 0.2], "glow": "#4FD1B5" }, "stand": [2.8, 13.8, 0.2], "floatingRing": { "y": 2.4, "radius": 0.7 } },
+  "zones": [
+    { "id": "lounge", "label": null, "bounds": [0.8, 6.6, 5.4, 10.8], "items": [
+      { "model": "rug.glb", "position": [3.1, 8.7], "size": [4.6, 4.2, 0.01], "color": "#D9A441" },
+      { "model": "sofa_3seat.glb", "position": [1.4, 8.8], "size": [1.45, 3.8, 0.9], "rotationY": 90, "color": "#66728A" },
+      { "model": "coffee_table.glb", "position": [3.65, 8.7], "size": [1.3, 1.6, 0.4] }
+    ] },
+    { "id": "meeting-room", "label": "Meeting room", "bounds": [19, 0, 24, 5], "glassWalls": [{ "from": [19, 5], "to": [24, 5] }, { "from": [19, 0], "to": [19, 3.4] }, { "from": [19, 4.6], "to": [19, 5] }], "door": { "from": [19, 3.4], "to": [19, 4.6] }, "items": [
+      { "model": "rug.glb", "position": [21.5, 2.5], "size": [4.6, 4.6, 0.01], "color": "#3E4C66" },
+      { "model": "meeting_table.glb", "position": [21.6, 2.35], "size": [2.8, 1.9, 0.75] },
+      { "model": "office_chair.glb", "positions": [[20.6, 0.85], [21.6, 0.85], [22.6, 0.85]], "rotationY": 0 },
+      { "model": "office_chair.glb", "positions": [[20.6, 3.85], [21.6, 3.85], [22.6, 3.85]], "rotationY": 180 },
+      { "model": "wall_screen.glb", "wall": "wall-back-right", "from": 20, "to": 23, "y": [1.2, 2.3] }
+    ] },
+    { "id": "break-area", "label": "Break area", "bounds": [18.5, 13, 24, 18], "glassWalls": "all four sides, height 2.3", "items": [
+      { "model": "rug.glb", "position": [21.3, 15.6], "size": [4.6, 4.2, 0.01], "color": "#D9A441" },
+      { "model": "round_table.glb", "position": [21.25, 15.55], "size": [1.9, 1.9, 0.75] },
+      { "model": "cafe_chair.glb", "positions": [[20.0, 15.5], [22.5, 15.5], [21.25, 14.3], [21.25, 16.8]], "color": "#3E8A5A" },
+      { "model": "plant_pot_large.glb", "position": [23.3, 13.9] }
+    ] },
+    { "id": "kitchen", "label": "Coffee", "bounds": [9, 16, 14.2, 17.8], "items": [
+      { "model": "kitchen_counter.glb", "position": [11.6, 16.5], "size": [5.2, 1.0, 1.0] },
+      { "model": "coffee_machine.glb", "position": [10.85, 16.45], "onCounter": true },
+      { "model": "microwave.glb", "position": [9.7, 16.45], "onCounter": true },
+      { "model": "pastry_tray.glb", "position": [12.3, 16.5], "onCounter": true },
+      { "model": "bar_stool.glb", "positions": [[10, 17.46], [11.6, 17.46], [13.2, 17.46]] }
+    ] }
+  ],
+  "props": [
+    { "id": "task-board", "model": "whiteboard_wall.glb", "wall": "wall-back-left", "from": 2, "to": 7.6, "y": [1.0, 2.6], "href": "Tasks" },
+    { "id": "tv-console", "model": "low_cabinet.glb", "position": [0.35, 4.4], "size": [0.6, 3.6, 0.35], "rotationY": 90 },
+    { "id": "bookshelf", "model": "bookshelf.glb", "position": [16.7, 0.32], "size": [2.6, 0.6, 1.75] },
+    { "id": "water-cooler", "model": "water_cooler.glb", "position": [20.3, 6.8], "size": [0.6, 0.6, 1.0] },
+    { "id": "server-rack-1", "model": "server_rack.glb", "position": [6.05, 15.85], "size": [0.9, 0.9, 1.5], "ledColors": ["#4FD1B5", "#5E9BEA", "#8C9BFF"] },
+    { "id": "server-rack-2", "model": "server_rack.glb", "position": [7.05, 15.85], "size": [0.9, 0.9, 1.5] },
+    { "id": "plant-1", "model": "plant_pot_large.glb", "position": [0.75, 0.75] },
+    { "id": "plant-2", "model": "plant_pot_large.glb", "position": [0.75, 5.95] },
+    { "id": "plant-3", "model": "plant_pot_large.glb", "position": [13.95, 0.95] },
+    { "id": "plant-4", "model": "plant_pot_large.glb", "position": [23.35, 7.15] },
+    { "id": "plant-5", "model": "plant_pot_large.glb", "position": [0.75, 16.95] },
+    { "id": "plant-6", "model": "plant_pot_large.glb", "position": [17.95, 17.15] }
+  ],
+  "labels": [
+    { "id": "task-board", "anchor": [0, 3.1, 4.8], "title": "Task board", "sub": "{active} active · {todo} todo · {review} review", "route": "/w/:id/tasks" },
+    { "id": "orchestrator", "anchor": [2.8, 2.7, 13.8], "title": "{orchestrator.name}", "sub": "Orchestrator · {status}", "route": "/w/:id/orchestrator", "accent": "status.working" },
+    { "id": "project-files", "anchor": [6.6, 2.0, 16.3], "title": "Project files", "sub": "{workspace.folderPath}", "route": "/w/:id/files" },
+    { "id": "coffee", "anchor": [11.6, 1.4, 16.5], "title": "Coffee", "sub": "Fresh pot" },
+    { "id": "meeting-room", "anchor": [21.5, 2.9, 2.5], "title": "Meeting room", "sub": "Free · next standup {time}" },
+    { "id": "break-area", "anchor": [21.25, 2.6, 15.5], "title": "Break area", "sub": "Idle agents rest here" },
+    { "id": "agent", "anchorFromStand": { "dy": 2.0 }, "title": "{agent.name}", "sub": "{agent.role}", "statusBubble": { "dy": 1.75, "working": "•••", "review": "!", "blocked": "!", "idle": "z" }, "onClick": "select-agent" }
+  ]
+}

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Inbox and approvals</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D10}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{position:relative;height:100vh;min-height:760px;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0B0D10;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.drawer{position:absolute;top:72px;right:16px;bottom:96px;max-width:calc(100% - 32px);background:rgba(17,20,25,0.97);border:1px solid #2F353E;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.dh{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 20px;border-bottom:1px solid #262B33;flex-wrap:wrap;min-height:60px}
+.dh h1{margin:0;font-size:17px;font-weight:600}
+.x{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#A2A9B4;text-decoration:none;font-size:20px}
+.x:hover{background:#1F242C;color:#fff}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn:hover{background:#222731;color:#fff}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.card{background:#14171C;border:1px solid #272C34;border-radius:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;border:1px solid #2F353E;color:#C2C8D1;white-space:nowrap}
+.av{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#0D0F12;flex:none}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+.field{width:100%;min-height:40px;background:#0F1216;border:1px solid #2F353E;border-radius:8px;color:#E9EBEE;font:inherit;padding:8px 12px}
+.row{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:14px 16px;border:0;border-bottom:1px solid #1E2228;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.row:hover{background:#171A20}
+.seg{display:flex;flex-wrap:wrap;gap:4px;padding:4px;background:#14171C;border:1px solid #272C34;border-radius:10px}
+.seg button{min-height:32px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#A2A9B4;font:inherit;font-size:12.5px;cursor:pointer}
+.seg button[aria-pressed=true]{background:#262B36;color:#E9EBEE}
+</style>
+</helmet>
+<div class="app">
+  <div style="position: absolute; inset: 0"><dc-import name="LobbyScene" shift="-380" hint-size="100%,100%"></dc-import></div>
+
+  <aside class="drawer" aria-label="Inbox" style="width: 920px">
+    <div class="dh">
+      <h1>Inbox <span class="faint" style="font-weight: 400; font-size: 13px">4 need you · 12 updates</span></h1>
+      <div style="flex: 1"></div>
+      <div class="seg" role="group" aria-label="Filter">
+        <button type="button" aria-pressed="true">Needs approval 4</button>
+        <button type="button" aria-pressed="false">Questions 1</button>
+        <button type="button" aria-pressed="false">Updates</button>
+        <button type="button" aria-pressed="false">Failures 0</button>
+      </div>
+      <a class="x" href="Main.dc.html" aria-label="Close">×</a>
+    </div>
+    <div style="flex: 1; min-height: 0; display: flex; flex-wrap: wrap; overflow: auto">
+      <section aria-label="Queue" style="flex: 1 1 320px; min-width: 0; border-right: 1px solid #22262D">
+        <sc-for list="{{items}}" as="it" hint-placeholder-count="4">
+          <button class="row" type="button" onClick="{{it.pick}}" aria-pressed="{{it.on}}" style="background: {{it.bg}}">
+            <span class="av" style="width: 30px; height: 30px; font-size: 12px; background: {{it.c}}">{{it.i}}</span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+              <span style="display: flex; justify-content: space-between; gap: 8px"><span style="font-weight: 600; font-size: 13.5px">{{it.title}}</span><span class="mono faint" style="font-size: 11px">{{it.t}}</span></span>
+              <span class="faint" style="font-size: 12.5px">{{it.who}} · {{it.ws}}</span>
+              <span style="display: flex; gap: 6px; margin-top: 2px"><span class="chip" style="border-color: {{it.kc}}; color: {{it.kc}}">{{it.kind}}</span></span>
+            </span>
+          </button>
+        </sc-for>
+      </section>
+      <section aria-label="Approval detail" style="flex: 999 1 460px; min-width: 0; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap">
+          <div style="flex: 1; min-width: 240px">
+            <div class="lbl" style="color: {{cur.kc}}">{{cur.kind}} · {{cur.task}}</div>
+            <h2 style="margin: 4px 0 0; font-size: 19px; font-weight: 600">{{cur.title}}</h2>
+            <div class="muted" style="font-size: 13px; margin-top: 4px">Requested by {{cur.who}} via {{cur.via}} · policy “{{cur.policy}}”</div>
+          </div>
+          <a class="btn sm" href="TaskRun.dc.html">Open task run</a>
+        </div>
+        <div class="card" style="overflow: hidden">
+          <div style="padding: 12px 16px; border-bottom: 1px solid #22262D; display: grid; grid-template-columns: 80px 1fr; gap: 6px 12px; font-size: 13px">
+            <span class="faint">{{cur.k1}}</span><span>{{cur.v1}}</span>
+            <span class="faint">{{cur.k2}}</span><span>{{cur.v2}}</span>
+          </div>
+          <div style="padding: 16px; font-size: 13.5px; color: #D7DBE1; white-space: pre-line; min-height: 180px">{{cur.body}}</div>
+        </div>
+        <div>
+          <label for="note" style="display: block; font-size: 12.5px; color: #A2A9B4; margin-bottom: 6px; font-weight: 500">Note to the agent (optional)</label>
+          <textarea id="note" class="field" rows="2" placeholder="e.g. make it shorter and sign as Roy" style="resize: vertical"></textarea>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center">
+          <button class="btn pri" type="button">{{cur.ok}}</button>
+          <button class="btn" type="button">Edit first</button>
+          <button class="btn ghost" type="button" style="color: #FF9C8E">Reject &amp; send back</button>
+          <div style="flex: 1"></div>
+          <label style="display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: #A2A9B4"><input type="checkbox" style="width: 16px; height: 16px; accent-color: #8C9BFF"> Always allow for {{cur.who}}</label>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <div style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Hud" mode="global" active="Inbox" page="Inbox" status="3 workspaces" hint-size="100%,100%"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { sel: 0 }; }
+  renderVals() {
+    const raw = [
+      { i: 'S', c: '#B9A2FF', title: 'Send email reply: “Re: Test”', who: 'Shake', ws: 'Cyfervoid', t: '11:58', kind: 'Send email', kc: '#F2B544', task: 'T-022', via: 'Cyfervoid GMail', policy: 'Ask before sending', k1: 'To', v1: 'client@example.com', k2: 'Subject', v2: 'Re: Test', ok: 'Approve & send',
+        body: 'Hi there,\n\nThanks for reaching out. We received your test message and everything is working on our side. If you have a HubSpot theme or module request, reply here and our team will get back to you within one business day.\n\nBest,\nCyfervoid Support' },
+      { i: 'R', c: '#5ED0C0', title: 'Merge rex/t-076-pricing-table', who: 'Rex', ws: 'Cyfervoid', t: '12:44', kind: 'Merge', kc: '#8C9BFF', task: 'T-076', via: 'Git', policy: 'Merging asks you', k1: 'Branch', v1: 'agent/rex/t-076-pricing-table → main', k2: 'QA', v2: 'Passed by Kei · 14 checks', ok: 'Approve & merge',
+        body: '3 commits · +612 −0\n\nmodules/pricing-table.module/module.html\nmodules/pricing-table.module/module.css\nmodules/pricing-table.module/fields.json\nmodules/pricing-table.module/meta.json\nmodules/pricing-table.module/README.md' },
+      { i: 'J', c: '#8C9BFF', title: 'Approve plan: Alumni website setup', who: 'Jarvis', ws: 'Alumni website', t: '11:40', kind: 'Plan', kc: '#4FD1B5', task: 'M-015', via: 'Jarvis', policy: 'New orchestrators ask you', k1: 'Steps', v1: '3 tasks · 1 new orchestrator', k2: 'Est. use', v2: '≈ 4% of Claude Code LS', ok: 'Approve plan',
+        body: '1. Create orchestrator “Alma” on Sonnet 5.5\n2. Assign existing agent as Frontend developer\n3. Scan repo and write context.md' },
+      { i: 'M', c: '#6FD3E8', title: 'Publish draft article ID 34', who: 'Mika', ws: 'Cyfervoid', t: 'Yesterday', kind: 'Publish', kc: '#F2B544', task: 'T-024', via: 'Cyfervoid.Com', policy: 'Ask before sending', k1: 'Post', v1: 'HubSpot themes vs modules: when to use each', k2: 'Status', v2: 'Draft · thumbnail attached', ok: 'Approve & publish',
+        body: 'Excerpt:\nThemes control the whole look of a HubSpot site. Modules are the reusable building blocks inside it. This post walks through when to build each, with three real Cyfervoid examples…' }
+    ];
+    const sel = this.state.sel;
+    const items = raw.map((r, ix) => Object.assign({}, r, { on: ix === sel ? 'true' : 'false', bg: ix === sel ? '#1A1E27' : 'transparent', pick: () => this.setState({ sel: ix }) }));
+    return { items, cur: raw[sel] };
+  }
+}
+</script>
+</body>
+</html>

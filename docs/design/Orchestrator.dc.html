@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Orchestrator console</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D10}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{position:relative;height:100vh;min-height:760px;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0B0D10;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.drawer{position:absolute;top:72px;right:16px;bottom:96px;max-width:calc(100% - 32px);background:rgba(17,20,25,0.97);border:1px solid #2F353E;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.dh{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 20px;border-bottom:1px solid #262B33;flex-wrap:wrap;min-height:60px}
+.dh h1{margin:0;font-size:17px;font-weight:600}
+.x{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#A2A9B4;text-decoration:none;font-size:20px}
+.x:hover{background:#1F242C;color:#fff}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn:hover{background:#222731;color:#fff}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.btn.icon{width:40px;padding:0}
+.card{background:#14171C;border:1px solid #272C34;border-radius:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;border:1px solid #2F353E;color:#C2C8D1;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.av{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#0D0F12;flex:none}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+.field{width:100%;min-height:40px;background:#0F1216;border:1px solid #2F353E;border-radius:8px;color:#E9EBEE;font:inherit;padding:8px 12px}
+.node{background:#14171C;border:1px solid #272C34;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-weight:600;color:#8A919C;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid #22262D}
+td{padding:9px 12px;border-bottom:1px solid #1E2228}
+</style>
+</helmet>
+<div class="app">
+  <div style="position: absolute; inset: 0"><dc-import name="OfficeScene" shift="-380" selected="9" hint-size="100%,100%"></dc-import></div>
+
+  <aside class="drawer" aria-label="Orchestrator console" style="width: 980px">
+    <div class="dh">
+      <span class="av" style="width: 30px; height: 30px; font-size: 11px; background: #4FD1B5">Cy</span>
+      <h1>Cyfervoid <span class="faint" style="font-weight: 400; font-size: 13px">Orchestrator</span></h1>
+      <span class="chip mono">Opus 5.5 · high</span>
+      <div style="flex: 1"></div>
+      <button class="btn sm" type="button">Pause</button>
+      <button class="btn sm pri" type="button">+ New mission</button>
+      <a class="x" href="Workspace.dc.html" aria-label="Close">×</a>
+    </div>
+    <div style="flex: 1; min-height: 0; display: flex; flex-wrap: wrap; overflow: auto">
+      <section aria-label="Mission plan" style="flex: 999 1 560px; min-width: 0; padding: 18px 20px; display: flex; flex-direction: column; gap: 18px">
+        <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap">
+          <div style="flex: 1; min-width: 240px">
+            <div class="lbl" style="color: #4FD1B5">Mission M-013 · running · from automation</div>
+            <h2 style="margin: 4px 0 0; font-size: 19px; font-weight: 600">Daily HubSpot module batch</h2>
+          </div>
+          <label class="muted" style="font-size: 12.5px; display: flex; align-items: center; gap: 6px">Mission <select class="field" style="width: auto; min-height: 36px"><option>M-013 Daily module batch</option><option>M-014 Weekly blog</option></select></label>
+        </div>
+        <div class="card" style="padding: 14px; overflow-x: auto">
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); min-width: 640px">
+            <sc-for list="{{lanes}}" as="l" hint-placeholder-count="4">
+              <div style="display: flex; flex-direction: column; gap: 10px; padding: 0 8px; border-left: {{l.border}}">
+                <div style="display: flex; justify-content: space-between"><span class="lbl">{{l.name}}</span><span class="faint" style="font-size: 12px">{{l.arrow}}</span></div>
+                <sc-for list="{{l.nodes}}" as="n" hint-placeholder-count="2">
+                  <a class="node" href="TaskRun.dc.html" style="border-color: {{n.bc}}; text-decoration: none; color: inherit">
+                    <span style="display: flex; gap: 6px; align-items: center"><span class="mono faint" style="font-size: 11px">{{n.id}}</span><span style="flex: 1"></span><span class="dot" style="background: {{n.sc}}"></span><span style="font-size: 11px; color: {{n.sc}}">{{n.st}}</span></span>
+                    <span style="font-weight: 500; font-size: 13px; color: #E9EBEE">{{n.title}}</span>
+                    <span style="display: flex; gap: 6px; align-items: center"><span class="av" style="width: 20px; height: 20px; font-size: 10px; background: {{n.c}}">{{n.i}}</span><span class="faint">{{n.who}}</span><span style="flex: 1"></span><span class="faint mono" style="font-size: 11px">{{n.dep}}</span></span>
+                  </a>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 14px">
+          <div class="card" style="flex: 2 1 320px; overflow-x: auto">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px 2px"><h3 class="lbl" style="margin: 0">Routing rules</h3><button class="btn sm ghost" type="button">+ Rule</button></div>
+            <table>
+              <thead><tr><th scope="col">When a task is about…</th><th scope="col">Send to</th><th scope="col">Then</th></tr></thead>
+              <tbody>
+                <tr><td>HubSpot module code</td><td>Rex</td><td class="muted">QA by Kei</td></tr>
+                <tr><td>Theme build / bug</td><td>Tomo, Ivo</td><td class="muted">QA by Kei</td></tr>
+                <tr><td>Blog / copy</td><td>Mika</td><td class="muted">Ask before publish</td></tr>
+                <tr><td>Customer email</td><td>Shake</td><td class="muted">Ask before send</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card" style="flex: 1 1 200px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+            <h3 class="lbl" style="margin: 0">Limits</h3>
+            <div style="display: flex; justify-content: space-between"><span class="muted">Parallel agents</span><b>3</b></div>
+            <div style="display: flex; justify-content: space-between"><span class="muted">Retries / task</span><b>2</b></div>
+            <div style="display: flex; justify-content: space-between"><span class="muted">Auto-start up to</span><b>8 tasks</b></div>
+            <div style="display: flex; justify-content: space-between"><span class="muted">Budget</span><b>80% / mo</b></div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-label="Delegation log and chat" style="flex: 1 1 300px; border-left: 1px solid #22262D; background: #13161B; display: flex; flex-direction: column">
+        <div class="lbl" style="padding: 14px 16px 6px">Decisions &amp; delegation</div>
+        <div style="flex: 1; padding: 6px 16px 12px; display: flex; flex-direction: column; gap: 12px">
+          <sc-for list="{{log}}" as="e" hint-placeholder-count="6">
+            <div style="display: flex; gap: 10px; font-size: 12.5px"><span class="mono faint" style="font-size: 11px; width: 38px; padding-top: 1px">{{e.t}}</span><span style="flex: 1; color: {{e.fg}}">{{e.text}}</span></div>
+          </sc-for>
+          <div style="align-self: flex-end; max-width: 88%; background: #262B36; padding: 8px 11px; border-radius: 12px 12px 2px 12px; font-size: 12.5px">Skip the video module this week.</div>
+          <div style="max-width: 94%; background: #161A20; border: 1px solid #262A31; padding: 9px 11px; border-radius: 12px 12px 12px 2px; font-size: 12.5px">Removed T-074c. Kei's QA starts when Rex finishes T-076.</div>
+        </div>
+        <form style="padding: 10px 14px 14px; display: flex; gap: 8px; border-top: 1px solid #22262D">
+          <label for="omsg" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Message the orchestrator</label>
+          <input id="omsg" class="field" placeholder="Steer this mission…">
+          <button class="btn icon pri" type="button" aria-label="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></button>
+        </form>
+      </section>
+    </div>
+  </aside>
+
+  <div style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Hud" mode="workspace" active="Orchestrator" ws="Ryscript" page="Orchestrator" status="2 working" hint-size="100%,100%"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = ['#8C9BFF', 'Done'], W = ['#4FD1B5', 'Running'], Q = ['#8A919C', 'Queued'], G = ['#F2B544', 'Needs you'];
+    const n = (id, title, who, i, c, s, dep) => ({ id, title, who, i, c, sc: s[0], st: s[1], bc: s === W ? '#2D5E54' : '#272C34', dep });
+    const lanes = [
+      { name: 'Research', arrow: '→', nodes: [n('T-072', 'Select 5 module ideas', 'Nia', 'N', '#9FE07A', D, '')] },
+      { name: 'Build', arrow: '→', nodes: [n('T-074', 'Breadcrumb, callout, video', 'Rex', 'R', '#5ED0C0', D, '← T-072'), n('T-076', 'Pricing table module', 'Rex', 'R', '#5ED0C0', W, '← T-072')] },
+      { name: 'QA', arrow: '→', nodes: [n('T-075', 'QA batch 1', 'Kei', 'K', '#FF8A7A', D, '← T-074'), n('T-077', 'QA pricing table', 'Kei', 'K', '#FF8A7A', Q, '← T-076')] },
+      { name: 'Merge', arrow: '', nodes: [n('M-013', 'Open merge request', 'Cyfervoid', 'Cy', '#4FD1B5', G, '← T-077')] }
+    ];
+    lanes.forEach((l, i) => { l.border = i === 0 ? 'none' : '1px dashed #2A2F37'; });
+    return {
+      lanes,
+      log: [
+        { t: '09:00', text: 'Mission M-013 received from automation “Daily module batch”.', fg: '#C9CFD8' },
+        { t: '09:01', text: 'Split into 6 tasks. Assigned T-072 → Nia.', fg: '#C9CFD8' },
+        { t: '10:12', text: 'T-072 done. Assigned T-074, T-076 → Rex.', fg: '#C9CFD8' },
+        { t: '12:41', text: 'Kei: QA passed on T-074 (14 checks).', fg: '#4FD1B5' },
+        { t: '12:44', text: 'Merged auto-sc1792467675858 → main (+9,237).', fg: '#AEB8FF' },
+        { t: '12:50', text: 'Wren blocked: needs Marketplace login. Asked you in Inbox.', fg: '#FF9C8E' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

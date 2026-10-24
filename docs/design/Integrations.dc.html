@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Integrations</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D10}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{position:relative;height:100vh;min-height:760px;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0B0D10;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.drawer{position:absolute;top:72px;right:16px;bottom:96px;max-width:calc(100% - 32px);background:rgba(17,20,25,0.97);border:1px solid #2F353E;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.dh{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 20px;border-bottom:1px solid #262B33;flex-wrap:wrap;min-height:60px}
+.dh h1{margin:0;font-size:17px;font-weight:600}
+.x{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#A2A9B4;text-decoration:none;font-size:20px}
+.x:hover{background:#1F242C;color:#fff}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn:hover{background:#222731;color:#fff}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.card{background:#14171C;border:1px solid #272C34;border-radius:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;border:1px solid #2F353E;color:#C2C8D1;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.av{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#0D0F12;flex:none}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+.field{width:100%;min-height:40px;background:#0F1216;border:1px solid #2F353E;border-radius:8px;color:#E9EBEE;font:inherit;padding:8px 12px}
+.fl{display:block;font-size:12.5px;color:#A2A9B4;margin-bottom:6px;font-weight:500}
+.ic{width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none}
+.it{display:flex;gap:12px;align-items:center;padding:12px;border-radius:12px;border:1px solid #272C34;background:#14171C;text-decoration:none;color:inherit}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-weight:600;color:#8A919C;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid #22262D}
+td{padding:7px 12px;border-bottom:1px solid #1E2228;vertical-align:middle}
+</style>
+</helmet>
+<div class="app">
+  <div style="position: absolute; inset: 0"><dc-import name="LobbyScene" shift="-360" hint-size="100%,100%"></dc-import></div>
+
+  <aside class="drawer" aria-label="Integrations" style="width: 880px">
+    <div class="dh">
+      <h1>Integrations <span class="faint" style="font-weight: 400; font-size: 13px">2 connected</span></h1>
+      <div style="flex: 1"></div>
+      <button class="btn sm pri" type="button">+ Add integration</button>
+      <a class="x" href="Main.dc.html" aria-label="Close">×</a>
+    </div>
+    <div style="flex: 1; min-height: 0; display: flex; flex-wrap: wrap; overflow: auto">
+      <section aria-label="Integration list" style="flex: 1 1 270px; max-width: 100%; border-right: 1px solid #22262D; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+        <div class="card" style="padding: 10px 12px; background: #151927; border-color: #343C66; font-size: 12.5px; color: #C9CFD8">Connect outside apps so Jarvis and your agents can use them as tools (MCP), or chat with Jarvis from apps like Slack. You choose what each can do, who can use it, and when it asks you.</div>
+        <div class="lbl" style="padding: 8px 2px 2px">Connected</div>
+        <a class="it" href="Integrations.dc.html"><span class="ic" style="background: #C8503F">G</span><span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 500">Cyfervoid GMail</span><span class="faint" style="font-size: 12px">2 tools · 1 agent · ask before sending</span></span></a>
+        <a class="it" href="Integrations.dc.html" style="border-color: #5C67B8; background: #181C26"><span class="ic" style="background: #8A6A3A">H</span><span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 500">Cyfervoid.Com</span><span class="faint" style="font-size: 12px">7 tools · 1 agent · ask before sending</span></span></a>
+        <div class="lbl" style="padding: 10px 2px 2px">Available</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+          <button class="it" type="button" style="font: inherit; cursor: pointer; padding: 10px"><span class="ic" style="background: #4A2A5A; width: 26px; height: 26px; font-size: 11px">S</span><span style="font-size: 13px">Slack</span></button>
+          <button class="it" type="button" style="font: inherit; cursor: pointer; padding: 10px"><span class="ic" style="background: #2A2F37; width: 26px; height: 26px; font-size: 10px">GH</span><span style="font-size: 13px">GitHub</span></button>
+          <button class="it" type="button" style="font: inherit; cursor: pointer; padding: 10px"><span class="ic" style="background: #7A3A1A; width: 26px; height: 26px; font-size: 10px">HS</span><span style="font-size: 13px">HubSpot</span></button>
+          <button class="it" type="button" style="font: inherit; cursor: pointer; padding: 10px"><span class="ic" style="background: #1A1E24; border: 1px dashed #5C67B8; color: #AEB8FF; width: 26px; height: 26px">+</span><span style="font-size: 13px">Custom MCP</span></button>
+        </div>
+      </section>
+
+      <section aria-label="Integration detail" style="flex: 999 1 460px; min-width: 0; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+          <span class="ic" style="background: #8A6A3A; width: 44px; height: 44px; font-size: 17px; border-radius: 11px">H</span>
+          <div style="flex: 1; min-width: 180px"><h2 style="margin: 0; font-size: 18px; font-weight: 600">Cyfervoid.Com</h2><div class="muted" style="font-size: 12.5px">HTTP API · cyfervoid.com</div></div>
+          <span class="chip" style="border-color: #2D5E54; color: #4FD1B5"><span class="dot" style="background: #4FD1B5"></span>Connected</span>
+          <button class="btn sm" type="button">Test</button>
+        </div>
+        <div class="card" style="overflow-x: auto">
+          <table>
+            <thead><tr><th scope="col">Tool</th><th scope="col">What it does</th><th scope="col">Policy</th></tr></thead>
+            <tbody>
+              <sc-for list="{{tools}}" as="t" hint-placeholder-count="7">
+                <tr>
+                  <td class="mono" style="font-size: 12px">{{t.name}}</td>
+                  <td class="muted">{{t.desc}}</td>
+                  <td><select class="field" aria-label="Policy for {{t.name}}" style="width: auto; min-height: 32px; font-size: 12.5px; padding: 4px 8px; color: {{t.c}}"><option>{{t.p}}</option><option>Allowed</option><option>Ask before sending</option><option>Off</option></select></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px">
+          <div class="card" style="flex: 1 1 220px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+            <span class="lbl">Who can use it</span>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center">
+              <span class="chip" style="padding: 3px 10px 3px 3px"><span class="av" style="width: 22px; height: 22px; font-size: 10px; background: #6FD3E8">M</span>Mika</span>
+              <span class="chip" style="padding: 3px 10px 3px 3px"><span class="av" style="width: 22px; height: 22px; font-size: 10px; background: #8C9BFF">J</span>Jarvis · read</span>
+              <button class="btn sm ghost" type="button">+ Agent</button>
+            </div>
+            <div><label class="fl" for="ws">Workspaces</label><select id="ws" class="field"><option>Ryscript only</option><option>All workspaces</option></select></div>
+          </div>
+          <div class="card" style="flex: 1 1 220px; padding: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 12.5px">
+            <span class="lbl">Recent calls</span>
+            <div style="display: flex; gap: 8px"><span class="mono faint" style="width: 40px">12:20</span><span style="flex: 1">Mika · <span class="mono">create_draft_post</span></span><span style="color: #4FD1B5">200</span></div>
+            <div style="display: flex; gap: 8px"><span class="mono faint" style="width: 40px">12:21</span><span style="flex: 1">Mika · <span class="mono">upload_media</span></span><span style="color: #4FD1B5">200</span></div>
+            <div style="display: flex; gap: 8px"><span class="mono faint" style="width: 40px">Yday</span><span style="flex: 1">Mika · <span class="mono">publish_post</span></span><span style="color: #F2B544">Waiting</span></div>
+          </div>
+        </div>
+        <div class="card" style="padding: 12px 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+          <div style="flex: 1; min-width: 220px"><div style="font-weight: 500; font-size: 13px">Connection</div><div class="mono faint" style="font-size: 11.5px">https://cyfervoid.com/api · token ••••3f2a · OS keychain</div></div>
+          <button class="btn sm" type="button">Edit</button>
+          <button class="btn sm ghost" type="button" style="color: #FF9C8E">Disconnect</button>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <div style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Hud" mode="global" active="Integrations" page="Integrations" status="3 workspaces" hint-size="100%,100%"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const C = { 'Allowed': '#4FD1B5', 'Ask before sending': '#F2B544', 'Off': '#8A919C' };
+    const t = (name, desc, p) => ({ name, desc, p, c: C[p] });
+    return {
+      tools: [
+        t('list_posts', 'Read posts and drafts', 'Allowed'),
+        t('get_post', 'Read one post', 'Allowed'),
+        t('create_draft_post', 'Create a draft', 'Allowed'),
+        t('update_draft_post', 'Edit a draft', 'Allowed'),
+        t('upload_media', 'Upload images', 'Allowed'),
+        t('publish_post', 'Make a post public', 'Ask before sending'),
+        t('delete_post', 'Delete a post', 'Off')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

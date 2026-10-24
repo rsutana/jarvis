@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Task board</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D10}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{position:relative;height:100vh;min-height:760px;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0B0D10;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.drawer{position:absolute;top:72px;right:16px;bottom:96px;max-width:calc(100% - 32px);background:rgba(17,20,25,0.97);border:1px solid #2F353E;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.dh{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 20px;border-bottom:1px solid #262B33;flex-wrap:wrap;min-height:60px}
+.dh h1{margin:0;font-size:17px;font-weight:600}
+.x{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#A2A9B4;text-decoration:none;font-size:20px}
+.x:hover{background:#1F242C;color:#fff}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn:hover{background:#222731;color:#fff}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;border:1px solid #2F353E;color:#C2C8D1;white-space:nowrap}
+.cnt{font-size:11px;color:#C9CFD8;background:#22272F;border-radius:999px;padding:1px 7px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.av{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#0D0F12;flex:none}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+.field{width:100%;min-height:40px;background:#0F1216;border:1px solid #2F353E;border-radius:8px;color:#E9EBEE;font:inherit;padding:8px 12px}
+.col{flex:0 0 220px;display:flex;flex-direction:column;gap:10px;background:#13161B;border:1px solid #1F242B;border-radius:12px;padding:10px}
+.tk{display:flex;flex-direction:column;gap:7px;padding:11px;border-radius:10px;background:#181B21;border:1px solid #272C34;text-decoration:none;color:inherit}
+.tk:hover{border-color:#3A414C;color:inherit}
+.seg{display:flex;gap:4px;padding:4px;background:#14171C;border:1px solid #272C34;border-radius:10px}
+.seg button{min-height:32px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#A2A9B4;font:inherit;font-size:12.5px;cursor:pointer}
+.seg button[aria-pressed=true]{background:#262B36;color:#E9EBEE}
+</style>
+</helmet>
+<div class="app">
+  <div style="position: absolute; inset: 0"><dc-import name="OfficeScene" shift="-400" hint-size="100%,100%"></dc-import></div>
+
+  <aside class="drawer" aria-label="Task board" style="width: 1020px">
+    <div class="dh">
+      <h1>Tasks <span class="faint" style="font-weight: 400; font-size: 13px">96 total</span></h1>
+      <div class="seg" role="group" aria-label="View"><button type="button" aria-pressed="true">Board</button><button type="button" aria-pressed="false">List</button><button type="button" aria-pressed="false">Timeline</button></div>
+      <div style="flex: 1"></div>
+      <button class="btn sm pri" type="button">+ New task</button>
+      <a class="x" href="Workspace.dc.html" aria-label="Close">×</a>
+    </div>
+    <div style="padding: 10px 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-bottom: 1px solid #1E2228">
+      <span class="muted" style="font-size: 13px">Plan, delegate and track work across your AI team.</span>
+      <div style="flex: 1"></div>
+      <label class="muted" style="font-size: 12.5px; display: flex; align-items: center; gap: 6px">Agent <select class="field" style="width: auto; min-height: 34px"><option>All</option><option>Rex</option><option>Kei</option></select></label>
+      <label class="muted" style="font-size: 12.5px; display: flex; align-items: center; gap: 6px">Mission <select class="field" style="width: auto; min-height: 34px"><option>All</option><option>M-013</option></select></label>
+    </div>
+    <div style="flex: 1; min-height: 0; overflow: auto; padding: 14px 16px 18px">
+      <div style="display: flex; gap: 10px; align-items: flex-start; min-width: max-content">
+        <sc-for list="{{cols}}" as="col" hint-placeholder-count="5">
+          <div class="col">
+            <div style="display: flex; align-items: center; gap: 8px"><span class="dot" style="background: {{col.c}}"></span><span class="lbl" style="color: #C9CFD8">{{col.name}}</span><span class="cnt">{{col.n}}</span><span style="flex: 1"></span><button class="btn sm ghost" type="button" aria-label="Add task to {{col.name}}">+</button></div>
+            <sc-for list="{{col.items}}" as="t" hint-placeholder-count="2">
+              <a class="tk" href="TaskRun.dc.html" style="border-color: {{t.bc}}">
+                <span style="display: flex; gap: 8px; align-items: center"><span class="mono faint" style="font-size: 11.5px">{{t.id}}</span><span style="flex: 1"></span><span class="chip" style="font-size: 11px; padding: 0 7px">{{t.mission}}</span></span>
+                <span style="font-weight: 500; font-size: 13.5px; color: #E9EBEE">{{t.title}}</span>
+                <sc-if value="{{t.hasNote}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; color: {{t.nc}}">{{t.note}}</span></sc-if>
+                <span style="display: flex; gap: 8px; align-items: center"><span class="av" style="width: 22px; height: 22px; font-size: 10px; background: {{t.c}}">{{t.i}}</span><span class="faint" style="font-size: 12px">{{t.who}}</span><span style="flex: 1"></span><span style="font-size: 11.5px; color: {{t.pc}}">{{t.pri}}</span></span>
+              </a>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </aside>
+
+  <div style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Hud" mode="workspace" active="Tasks" ws="Ryscript" page="Tasks" status="2 working" hint-size="100%,100%"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = { R: ['Rex', '#5ED0C0'], K: ['Kei', '#FF8A7A'], M: ['Mika', '#6FD3E8'], S: ['Shake', '#B9A2FF'], W: ['Wren', '#E8C99A'], N: ['Nia', '#9FE07A'], T: ['Tomo', '#7FB2FF'] };
+    const P = { High: '#FF9C8E', Medium: '#C2C8D1', Low: '#8A919C' };
+    const t = (id, title, a, pri, mission, note, nc, bc) => ({ id, title, i: a, who: A[a][0], c: A[a][1], pri, pc: P[pri], mission, note: note || '', hasNote: !!note, nc: nc || '#8A919C', bc: bc || '#272C34' });
+    return {
+      cols: [
+        { name: 'Todo', c: '#6B727D', n: 3, items: [
+          t('T-078', 'Testimonial slider module', 'R', 'Medium', 'M-013'),
+          t('T-079', 'Weekly blog: pick topic', 'N', 'Low', 'M-014', 'Scheduled · Mon 9:00 AM'),
+          t('T-080', 'Theme footer a11y fixes', 'T', 'High', 'Manual')
+        ] },
+        { name: 'In progress', c: '#4FD1B5', n: 2, items: [
+          t('T-076', 'Pricing table module', 'R', 'High', 'M-013', 'Writing fields.json · 64%', '#4FD1B5', '#2D5E54'),
+          t('T-077', 'QA pricing table', 'K', 'Medium', 'M-013', 'Waiting on T-076')
+        ] },
+        { name: 'Blocked', c: '#FF8A7A', n: 1, items: [
+          t('T-081', 'Scan Marketplace top themes', 'W', 'Medium', 'Manual', 'Needs HubSpot Marketplace login', '#FF9C8E', '#5A2E2A')
+        ] },
+        { name: 'Review', c: '#F2B544', n: 1, items: [
+          t('T-022', 'Reply to email: Re: Test', 'S', 'Medium', 'Inbox', 'Draft waiting for your approval', '#F2B544', '#5A4A22')
+        ] },
+        { name: 'Done', c: '#8C9BFF', n: 91, items: [
+          t('T-075', 'Fix code block caption contrast', 'R', 'Medium', 'M-013', 'Merged · +47 −2'),
+          t('T-024', 'Thumbnail for draft article 34', 'M', 'Medium', 'Manual', 'No file changes · answer in report'),
+          t('T-023', 'Draft one Cyfervoid blog article', 'M', 'Medium', 'Manual', 'No file changes · answer in report')
+        ] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New workspace</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D10}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{position:relative;height:100vh;min-height:760px;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0B0D10;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.drawer{position:absolute;top:72px;right:16px;bottom:96px;max-width:calc(100% - 32px);background:rgba(17,20,25,0.97);border:1px solid #2F353E;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.dh{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 20px;border-bottom:1px solid #262B33;flex-wrap:wrap;min-height:60px}
+.dh h1{margin:0;font-size:17px;font-weight:600}
+.x{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#A2A9B4;text-decoration:none;font-size:20px}
+.x:hover{background:#1F242C;color:#fff}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn:hover{background:#222731;color:#fff}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.card{background:#14171C;border:1px solid #272C34;border-radius:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;border:1px solid #2F353E;color:#C2C8D1;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.av{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#0D0F12;flex:none}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+.field{width:100%;min-height:40px;background:#0F1216;border:1px solid #2F353E;border-radius:8px;color:#E9EBEE;font:inherit;padding:8px 12px}
+.fl{display:block;font-size:12.5px;color:#A2A9B4;margin-bottom:6px;font-weight:500}
+.stp{display:flex;gap:10px;align-items:center;min-height:44px;padding:6px 10px;border:0;border-radius:10px;background:transparent;color:#A2A9B4;font:inherit;text-align:left;cursor:pointer}
+.stp:hover{background:#171A20}
+.num{width:26px;height:26px;border-radius:50%;border:1.5px solid #3A414C;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid #2F353E;border-radius:10px;cursor:pointer}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+</style>
+</helmet>
+<div class="app">
+  <div style="position: absolute; inset: 0"><dc-import name="LobbyScene" shift="-330" hint-size="100%,100%"></dc-import></div>
+
+  <aside class="drawer" aria-label="New workspace" style="width: 820px">
+    <div class="dh">
+      <h1>New workspace</h1>
+      <span class="faint" style="font-size: 13px">One folder · one orchestrator · one team</span>
+      <div style="flex: 1"></div>
+      <a class="btn sm ghost" href="JarvisChat.dc.html">Describe it to Jarvis instead</a>
+      <a class="x" href="Main.dc.html" aria-label="Close">×</a>
+    </div>
+    <nav aria-label="Steps" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 16px; border-bottom: 1px solid #22262D">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+        <button class="stp" type="button" onClick="{{s.go}}" aria-current="{{s.cur}}" style="background: {{s.bg}}; color: {{s.fg}}">
+          <span class="num" style="border-color: {{s.ring}}; background: {{s.fill}}; color: {{s.numfg}}">{{s.n}}</span>
+          <span style="font-weight: 500; font-size: 13.5px">{{s.name}}</span>
+        </button>
+      </sc-for>
+    </nav>
+    <div style="flex: 1; overflow: auto; padding: 22px 26px; display: flex; flex-direction: column; gap: 18px">
+      <sc-if value="{{is0}}" hint-placeholder-val="{{true}}">
+        <div style="display: flex; flex-direction: column; gap: 18px">
+          <div><label class="fl" for="wn">Workspace name</label><input id="wn" class="field" value="Alumni website"></div>
+          <div><label class="fl" for="wg">Goal (Jarvis and the orchestrator read this)</label><textarea id="wg" class="field" rows="4">Maintain the alumni association website: fix bugs, publish event pages, and keep the member directory in sync.</textarea></div>
+          <div>
+            <span class="fl">Building roof colour</span>
+            <div style="display: flex; gap: 10px" role="radiogroup" aria-label="Building colour">
+              <button type="button" role="radio" aria-checked="true" aria-label="Clay" style="width: 36px; height: 36px; border-radius: 9px; background: #D7655A; border: 2px solid #E9EBEE; cursor: pointer"></button>
+              <button type="button" role="radio" aria-checked="false" aria-label="Blue" style="width: 36px; height: 36px; border-radius: 9px; background: #4A7FE0; border: 2px solid transparent; cursor: pointer"></button>
+              <button type="button" role="radio" aria-checked="false" aria-label="Green" style="width: 36px; height: 36px; border-radius: 9px; background: #34B394; border: 2px solid transparent; cursor: pointer"></button>
+              <button type="button" role="radio" aria-checked="false" aria-label="Purple" style="width: 36px; height: 36px; border-radius: 9px; background: #8A6FE0; border: 2px solid transparent; cursor: pointer"></button>
+              <button type="button" role="radio" aria-checked="false" aria-label="Amber" style="width: 36px; height: 36px; border-radius: 9px; background: #E0A33A; border: 2px solid transparent; cursor: pointer"></button>
+            </div>
+            <div class="faint" style="font-size: 12px; margin-top: 6px">The new building appears on the empty plot in the lobby.</div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{is1}}" hint-placeholder-val="{{false}}">
+        <div style="display: flex; flex-direction: column; gap: 18px">
+          <div><label class="fl" for="pf">Project folder</label><div style="display: flex; gap: 8px"><input id="pf" class="field mono" value="D:\alter-ego-projects\alumni-website" style="font-size: 13px"><button class="btn" type="button">Choose…</button></div></div>
+          <div class="card" style="padding: 12px 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap"><span class="dot" style="background: #4FD1B5"></span><span style="flex: 1; font-size: 13px">Git repository found · branch <span class="mono">main</span> · clean</span><span class="faint mono" style="font-size: 12px">origin: github.com/[ORG]/alumni</span></div>
+          <div class="g2">
+            <div><label class="fl" for="bb">Base branch</label><select id="bb" class="field"><option>main</option><option>develop</option></select></div>
+            <div><label class="fl" for="bn">Task branch pattern</label><input id="bn" class="field mono" value="agent/{agent}/{task-id}-{slug}" style="font-size: 13px"></div>
+          </div>
+          <fieldset style="border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px">
+            <legend class="fl">When QA passes</legend>
+            <label class="opt" style="border-color: #5C67B8"><input type="radio" name="m" checked="" style="accent-color: #8C9BFF; margin-top: 3px"><span><b style="font-weight: 600">Ask me to merge</b><br><span class="faint" style="font-size: 12.5px">Changes wait in Inbox for one-click approval.</span></span></label>
+            <label class="opt"><input type="radio" name="m" style="accent-color: #8C9BFF; margin-top: 3px"><span><b style="font-weight: 600">Auto-merge, keep revert button</b><br><span class="faint" style="font-size: 12.5px">Good for low-risk repos. You can revert from Changes.</span></span></label>
+          </fieldset>
+        </div>
+      </sc-if>
+      <sc-if value="{{is2}}" hint-placeholder-val="{{false}}">
+        <div style="display: flex; flex-direction: column; gap: 18px">
+          <p class="muted" style="margin: 0">The orchestrator turns Jarvis's missions into tasks and assigns them to agents. It gets the head desk in the office.</p>
+          <div class="g2">
+            <div><label class="fl" for="on">Name</label><input id="on" class="field" value="Alma"></div>
+            <div><label class="fl" for="oa">AI account</label><select id="oa" class="field"><option>Claude Code LS · Anthropic</option><option>Codex Leadstreet · OpenAI</option></select></div>
+            <div><label class="fl" for="om">Model</label><select id="om" class="field"><option>Opus 5.5</option><option>Sonnet 5.5</option></select></div>
+            <div><label class="fl" for="ot">Thinking</label><select id="ot" class="field"><option>Medium</option><option>High</option><option>Default</option></select></div>
+          </div>
+          <fieldset style="border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px">
+            <legend class="fl">Autonomy</legend>
+            <label class="opt"><input type="radio" name="au" style="accent-color: #8C9BFF; margin-top: 3px"><span><b style="font-weight: 600">Propose only</b><br><span class="faint" style="font-size: 12.5px">Every plan waits for you.</span></span></label>
+            <label class="opt" style="border-color: #5C67B8"><input type="radio" name="au" checked="" style="accent-color: #8C9BFF; margin-top: 3px"><span><b style="font-weight: 600">Run small plans</b><br><span class="faint" style="font-size: 12.5px">Plans of 8 tasks or fewer start on their own. Sending, merging and deleting still ask.</span></span></label>
+            <label class="opt"><input type="radio" name="au" style="accent-color: #8C9BFF; margin-top: 3px"><span><b style="font-weight: 600">Full autopilot</b><br><span class="faint" style="font-size: 12.5px">Within budget limits. Integration policies still apply.</span></span></label>
+          </fieldset>
+        </div>
+      </sc-if>
+      <sc-if value="{{is3}}" hint-placeholder-val="{{false}}">
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <div class="card" style="padding: 12px 14px; border-color: #343C66; display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+            <span class="av" style="background: #8C9BFF; border-radius: 9px; width: 28px; height: 28px; font-size: 12px">J</span>
+            <span style="flex: 1; min-width: 220px; font-size: 13.5px">Jarvis suggests <b>Frontend Developer</b>, <b>QA Tester</b> and <b>Content Writer</b> for this goal.</span>
+            <button class="btn sm pri" type="button">Add all 3</button>
+          </div>
+          <div class="g2">
+            <sc-for list="{{pool}}" as="a" hint-placeholder-count="6">
+              <label class="opt" style="align-items: center">
+                <input type="checkbox" checked="{{a.on}}" style="accent-color: #8C9BFF; width: 16px; height: 16px">
+                <span class="av" style="background: {{a.c}}">{{a.i}}</span>
+                <span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 500">{{a.name}}</span><span class="faint" style="font-size: 12px">{{a.role}} · {{a.model}}</span></span>
+                <span class="chip">{{a.where}}</span>
+              </label>
+            </sc-for>
+          </div>
+          <a class="btn" href="AgentEditor.dc.html" style="align-self: flex-start">+ Create a new agent</a>
+        </div>
+      </sc-if>
+    </div>
+    <div style="display: flex; gap: 8px; border-top: 1px solid #22262D; padding: 14px 20px">
+      <button class="btn" type="button" onClick="{{back}}">Back</button>
+      <div style="flex: 1"></div>
+      <button class="btn pri" type="button" onClick="{{next}}">{{nextLabel}}</button>
+    </div>
+  </aside>
+
+  <div style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Hud" mode="global" active="Workspaces" page="New workspace" status="3 workspaces" hint-size="100%,100%"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { step: 0 }; }
+  renderVals() {
+    const st = this.state.step;
+    const names = ['Basics', 'Folder & Git', 'Orchestrator', 'Team'];
+    const steps = names.map((x, i) => ({
+      n: i < st ? '✓' : String(i + 1), name: x,
+      cur: i === st ? 'step' : 'false',
+      bg: i === st ? '#1C2028' : 'transparent', fg: i === st ? '#E9EBEE' : '#A2A9B4',
+      ring: i <= st ? '#8C9BFF' : '#3A414C', fill: i < st ? '#8C9BFF' : 'transparent', numfg: i < st ? '#0D0F12' : 'inherit',
+      go: () => this.setState({ step: i })
+    }));
+    return {
+      steps, is0: st === 0, is1: st === 1, is2: st === 2, is3: st === 3,
+      back: () => this.setState({ step: Math.max(0, st - 1) }),
+      next: () => this.setState({ step: Math.min(3, st + 1) }),
+      nextLabel: st === 3 ? 'Create workspace' : 'Continue',
+      pool: [
+        { i: 'A', c: '#FFB3D1', name: 'Aria', role: 'Frontend Developer', model: 'Sonnet 5.5', where: 'In pool', on: true },
+        { i: 'K', c: '#FF8A7A', name: 'Kei', role: 'QA Tester', model: 'Sonnet 5.5', where: 'Cyfervoid', on: true },
+        { i: 'M', c: '#6FD3E8', name: 'Mika', role: 'Content Writer', model: 'Sonnet 5.5', where: 'Cyfervoid', on: false },
+        { i: 'E', c: '#C6A6FF', name: 'Echo', role: 'Editor', model: 'Haiku 5.5', where: 'News website', on: false },
+        { i: 'N', c: '#9FE07A', name: 'Nia', role: 'Market Researcher', model: 'Sonnet 5.5', where: 'Cyfervoid', on: false },
+        { i: 'P', c: '#E8C99A', name: 'Pax', role: 'Data Engineer', model: 'GPT-5.6', where: 'In pool', on: false }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI accounts and usage</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D10}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{position:relative;height:100vh;min-height:760px;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0B0D10;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.drawer{position:absolute;top:72px;right:16px;bottom:96px;max-width:calc(100% - 32px);background:rgba(17,20,25,0.97);border:1px solid #2F353E;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.dh{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 20px;border-bottom:1px solid #262B33;flex-wrap:wrap;min-height:60px}
+.dh h1{margin:0;font-size:17px;font-weight:600}
+.x{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#A2A9B4;text-decoration:none;font-size:20px}
+.x:hover{background:#1F242C;color:#fff}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn:hover{background:#222731;color:#fff}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.card{background:#14171C;border:1px solid #272C34;border-radius:12px}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+.field{width:100%;min-height:38px;background:#0F1216;border:1px solid #2F353E;border-radius:8px;color:#E9EBEE;font:inherit;padding:6px 10px}
+.fl{display:block;font-size:12px;color:#A2A9B4;margin-bottom:5px;font-weight:500}
+.tog{width:36px;height:20px;border-radius:10px;background:#4FD1B5;position:relative;flex:none;border:0;cursor:pointer}
+.tog span{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#0D0F12}
+.bar{height:8px;background:#22272F;border-radius:4px;position:relative}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+</style>
+</helmet>
+<div class="app">
+  <div style="position: absolute; inset: 0"><dc-import name="LobbyScene" shift="-240" hint-size="100%,100%"></dc-import></div>
+
+  <aside class="drawer" aria-label="AI accounts" style="width: 600px">
+    <div class="dh">
+      <h1>AI Accounts <span class="faint" style="font-weight: 400; font-size: 13px">5 connected</span></h1>
+      <div style="flex: 1"></div>
+      <button class="btn sm pri" type="button">+ Add account</button>
+      <a class="x" href="Main.dc.html" aria-label="Close">×</a>
+    </div>
+    <div style="flex: 1; overflow: auto; padding: 16px 18px 20px; display: flex; flex-direction: column; gap: 14px">
+      <p class="muted" style="margin: 0; font-size: 13px">Where your agents get their intelligence.</p>
+
+      <div class="card" style="padding: 14px 16px; border-color: #2D5E54; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; gap: 12px; align-items: flex-start">
+          <span style="width: 30px; height: 30px; border-radius: 9px; background: #8C9BFF; color: #0D0F12; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">J</span>
+          <div style="flex: 1"><div style="font-weight: 600">Jarvis watches your limits</div><div class="faint" style="font-size: 12.5px">When an account is close to running out, he can move its agents to one with room.</div></div>
+          <button class="btn sm" type="button" style="color: #FF9C8E; border-color: #5A2E2A">Pause all agents</button>
+        </div>
+        <div class="g3">
+          <div><label class="fl" for="l1">When close</label><select id="l1" class="field"><option>Switch automatically</option><option>Ask me</option><option>Pause agents</option></select></div>
+          <div><label class="fl" for="l2">Warn at</label><select id="l2" class="field"><option>85%</option><option>80%</option></select></div>
+          <div><label class="fl" for="l3">Stop using at</label><select id="l3" class="field"><option>89%</option><option>95%</option></select></div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; font-size: 13px"><button class="tog" type="button" role="switch" aria-checked="true" aria-label="Switch back after reset"><span></span></button>Switch back after the limit resets</div>
+      </div>
+
+      <div class="card" style="padding: 12px 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: #151927; border-color: #343C66">
+        <span style="flex: 1; min-width: 240px; font-size: 13px"><b>Jarvis (safe limit) moved 15 agents</b> <span class="muted">Claude Code Roy → Claude Code LS · 6:01 PM · they return after the limit resets</span></span>
+        <button class="btn sm" type="button">Move back</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <sc-for list="{{accts}}" as="a" hint-placeholder-count="5">
+          <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; gap: 10px; align-items: center">
+              <span style="width: 28px; height: 28px; border-radius: 8px; background: {{a.bg}}; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px">{{a.ab}}</span>
+              <div style="flex: 1; min-width: 0"><div style="font-weight: 600; font-size: 13.5px">{{a.name}}</div><div class="faint" style="font-size: 12px">{{a.kind}} · {{a.agents}}</div></div>
+              <b style="color: {{a.c}}; font-size: 14px">{{a.pct}}</b>
+            </div>
+            <div class="bar"><div style="height: 8px; border-radius: 4px; width: {{a.pct}}; background: {{a.c}}"></div><span style="position: absolute; left: 85%; top: -3px; width: 2px; height: 14px; background: #F2B544" aria-hidden="true"></span><span style="position: absolute; left: 89%; top: -3px; width: 2px; height: 14px; background: #FF8A7A" aria-hidden="true"></span></div>
+            <div class="faint" style="font-size: 12px">{{a.window}} · {{a.reset}}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px">
+        <div><div style="font-weight: 600">Jarvis's brain</div><div class="faint" style="font-size: 12.5px">Who answers Jarvis and plans your tasks.</div></div>
+        <div class="g3">
+          <div><label class="fl" for="j1">Jarvis uses</label><select id="j1" class="field"><option>Codex Leadstreet</option><option>Claude Code LS</option></select></div>
+          <div><label class="fl" for="j2">Model</label><select id="j2" class="field"><option>GPT-5.6-Sol</option><option>Opus 5.5</option></select></div>
+          <div><label class="fl" for="j3">Thinking</label><select id="j3" class="field"><option>Medium</option><option>High</option></select></div>
+        </div>
+        <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 13px"><input type="checkbox" checked="" style="accent-color: #8C9BFF; width: 16px; height: 16px; margin-top: 2px"><span>Let Jarvis start tasks and plans on his own <span class="faint" style="display: block; font-size: 12px">Within 80% of budgets, up to 12 times an hour, plans of 8 tasks or fewer. Merging, deleting, billing, folders and sending still ask you.</span></span></label>
+      </div>
+
+      <div class="card" style="padding: 14px 16px">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px">
+          <span style="font-weight: 600">Usage · last 7 days</span>
+          <div style="display: flex; gap: 12px; font-size: 12px" class="muted"><span style="display: flex; gap: 5px; align-items: center"><span style="width: 10px; height: 10px; border-radius: 2px; background: #4FD1B5"></span>Cyfervoid</span><span style="display: flex; gap: 5px; align-items: center"><span style="width: 10px; height: 10px; border-radius: 2px; background: #2F6FD6"></span>News</span><span style="display: flex; gap: 5px; align-items: center"><span style="width: 10px; height: 10px; border-radius: 2px; background: #8C9BFF"></span>Jarvis</span></div>
+        </div>
+        <div role="img" aria-label="Daily usage by workspace: Cyfervoid uses most of the quota, peaking Thursday" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; align-items: end; height: 130px; border-bottom: 1px solid #2F353E">
+          <sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+            <div style="display: flex; flex-direction: column; justify-content: flex-end; height: 100%; gap: 2px">
+              <div style="height: {{d.j}}; background: #8C9BFF; border-radius: 3px 3px 0 0"></div>
+              <div style="height: {{d.n}}; background: #2F6FD6"></div>
+              <div style="height: {{d.c}}; background: #4FD1B5"></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; margin-top: 6px">
+          <sc-for list="{{days}}" as="d" hint-placeholder-count="7"><span class="faint" style="font-size: 12px; text-align: center">{{d.l}}</span></sc-for>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Hud" mode="global" active="AI Accounts" page="AI Accounts" status="3 workspaces" hint-size="100%,100%"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const col = (p) => p >= 89 ? '#FF8A7A' : p >= 85 ? '#F2B544' : '#4FD1B5';
+    const a = (name, kind, ab, bg, p, window, reset, agents) => ({ name, kind, ab, bg, pct: p + '%', c: col(p), window, reset, agents });
+    const d = (l, c, n, j) => ({ l, c: c + '%', n: n + '%', j: j + '%' });
+    return {
+      accts: [
+        a('Claude Code LS', 'Claude Code sign-in', 'A', '#7A4A2A', 62, '5-hour window', 'resets in 3h 12m', '24 agents'),
+        a('Claude Code Roy', 'Claude Code sign-in', 'A', '#7A4A2A', 91, '5-hour window', 'resets in 41m', 'paused · 0 agents'),
+        a('Codex Leadstreet', 'Codex sign-in', 'O', '#2A5A4A', 34, 'Weekly', 'resets Mon', 'Jarvis + 2 agents'),
+        a('Anthropic API', 'API key', 'K', '#3A3F4A', 18, '[YOUR MONTHLY CAP]', 'month to date', 'fallback only'),
+        a('OpenAI API', 'API key', 'K', '#3A3F4A', 5, '[YOUR MONTHLY CAP]', 'month to date', 'fallback only')
+      ],
+      days: [d('Fri', 48, 8, 6), d('Sat', 22, 4, 5), d('Sun', 15, 0, 4), d('Mon', 55, 12, 8), d('Tue', 61, 10, 7), d('Wed', 58, 6, 9), d('Thu', 72, 9, 10)]
+    };
+  }
+}
+</script>
+</body>
+</html>

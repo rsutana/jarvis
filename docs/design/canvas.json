@@ -1,0 +1,279 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AIAccounts.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "11 · AI accounts, limits & usage",
+      "w": 1440,
+      "x": 1520,
+      "y": 4260
+    },
+    "AgentEditor.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "10 · Agent profile editor",
+      "w": 1440,
+      "x": 0,
+      "y": 4260
+    },
+    "Automations.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "13 · Automations / schedules",
+      "w": 1440,
+      "x": 0,
+      "y": 5680
+    },
+    "Changes.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "09 · Changes / merge review",
+      "w": 1440,
+      "x": 3040,
+      "y": 2840
+    },
+    "Foundations.dc.html": {
+      "expand": "fill",
+      "h": 1650,
+      "title": "14 · Foundations for coding agents",
+      "w": 1440,
+      "x": 1520,
+      "y": 5680
+    },
+    "Handoff.dc.html": {
+      "expand": "fill",
+      "h": 2600,
+      "title": "15 · Implementation handoff · Electron + Vue + Three.js + Tailwind + GLB",
+      "w": 1440,
+      "x": 0,
+      "y": 9170
+    },
+    "Hud.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "C3 · Hud component (top bar + dock)",
+      "w": 1440,
+      "x": 3040,
+      "y": 7750
+    },
+    "Inbox.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "03 · Inbox / approvals queue (new)",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "Integrations.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "12 · Integrations (MCP) & permissions",
+      "w": 1440,
+      "x": 3040,
+      "y": 4260
+    },
+    "JarvisChat.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "02 · Jarvis chat + plan approval",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "LobbyScene.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "title": "C1 · LobbyScene component (isometric campus)",
+      "w": 1440,
+      "x": 0,
+      "y": 7750
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "01 · Lobby (isometric campus + Jarvis)",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "NewWorkspace.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "04 · New workspace wizard (new)",
+      "w": 1440,
+      "x": 0,
+      "y": 1420
+    },
+    "OfficeScene.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "title": "C2 · OfficeScene component (isometric office)",
+      "w": 1440,
+      "x": 1520,
+      "y": 7750
+    },
+    "Orchestrator.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "06 · Orchestrator console",
+      "w": 1440,
+      "x": 3040,
+      "y": 1420
+    },
+    "TaskRun.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "08 · Task run detail (new)",
+      "w": 1440,
+      "x": 1520,
+      "y": 2840
+    },
+    "Tasks.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "07 · Task board",
+      "w": 1440,
+      "x": 0,
+      "y": 2840
+    },
+    "Workspace.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "05 · Workspace office (isometric)",
+      "w": 1440,
+      "x": 1520,
+      "y": 1420
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-23T11:20:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "s1": {
+      "fill": "blue",
+      "text": "Hierarchy for implementation:\nJarvis (global assistant, 1 per app)\n  → Workspace (project folder + git repo)\n    → Orchestrator (1 per workspace, plans & delegates)\n      → Agents (role, model, skills, integrations)\n        → Tasks → Runs → Changes (branch) → QA → Merge\n\nShell: full-window isometric scene (LobbyScene or OfficeScene) + Hud (floating top bar + bottom dock) + one Drawer panel on the right. Panels never replace the world; they slide over it.",
+      "w": 520,
+      "x": -640,
+      "y": 0
+    },
+    "s2": {
+      "fill": "orange",
+      "text": "Approval rule: anything that sends, merges, deletes, bills or touches folders lands in Inbox (03) unless the integration/agent policy says 'auto'.",
+      "w": 520,
+      "x": -640,
+      "y": 1420
+    },
+    "s3": {
+      "fill": "teal",
+      "text": "C1/C2 are drawn on the canvas with divs, but in the app they are Three.js worlds: OrthographicCamera at yaw 45° / pitch −35.264°, 1 tile = 1 world unit. Exact positions of every desk, zone, prop and label are in handoff/office-layout.json and handoff/lobby-layout.json. Labels are Vue components inside CSS2DObjects so they stay clickable and accessible. See board 15.",
+      "w": 520,
+      "x": -640,
+      "y": 7750
+    },
+    "t1": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Layer 1 · Jarvis (you ↔ the app)",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Layer 2 · Workspace → Orchestrator",
+      "w": 240,
+      "x": 0,
+      "y": 1120
+    },
+    "t3": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Layer 3 · Agents doing work → review → merge",
+      "w": 240,
+      "x": 0,
+      "y": 2540
+    },
+    "t4": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Configuration · agents, models, tools",
+      "w": 240,
+      "x": 0,
+      "y": 3960
+    },
+    "t5": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Ops & system",
+      "w": 240,
+      "x": 0,
+      "y": 5380
+    },
+    "t6": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Shared components · isometric scenes & HUD",
+      "w": 240,
+      "x": 0,
+      "y": 7450
+    },
+    "t7": {
+      "kind": "title1",
+      "maxW": 1440,
+      "text": "Implementation handoff",
+      "x": 0,
+      "y": 8870
+    },
+    "s4": {
+      "fill": "green",
+      "text": "Coding agents: start at board 15 and project/handoff/README.md. Tokens → handoff/tailwind.config.js · types + IPC → handoff/types.ts · 3D layouts → handoff/*-layout.json.",
+      "w": 520,
+      "x": -640,
+      "y": 9170
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "JarvisChat.dc.html",
+    "Inbox.dc.html",
+    "NewWorkspace.dc.html",
+    "Workspace.dc.html",
+    "Orchestrator.dc.html",
+    "Tasks.dc.html",
+    "TaskRun.dc.html",
+    "Changes.dc.html",
+    "AgentEditor.dc.html",
+    "AIAccounts.dc.html",
+    "Integrations.dc.html",
+    "Automations.dc.html",
+    "Foundations.dc.html",
+    "LobbyScene.dc.html",
+    "OfficeScene.dc.html",
+    "Hud.dc.html",
+    "Handoff.dc.html"
+  ],
+  "pages": [],
+  "title": "Jarvis Agent Orchestrator"
+}

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lobby scene</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div onPointerDown="{{down}}" onPointerMove="{{move}}" onPointerUp="{{up}}" onPointerLeave="{{up}}" onWheel="{{wheel}}" style="position: absolute; inset: 0; overflow: hidden; background: #0B0D10; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #E9EBEE; cursor: {{cursor}}; touch-action: none">
+  <div style="position: absolute; left: 50%; top: 50%; width: 1440px; height: 1000px; margin-left: -720px; margin-top: -500px; transform: translate({{sx}}, {{sy}}) scale({{zoom}}); transform-origin: 50% 50%">
+    <div aria-hidden="true">
+      <sc-for list="{{shapes}}" as="s" hint-placeholder-count="0">
+        <div style="position: absolute; box-sizing: border-box; left: {{s.l}}; top: {{s.t}}; width: {{s.w}}; height: {{s.h}}; background: {{s.bg}}; clip-path: {{s.clip}}; border-radius: {{s.rad}}; opacity: {{s.op}}; border: {{s.bd}}; box-shadow: {{s.sh}}"></div>
+      </sc-for>
+    </div>
+    <sc-for list="{{tags}}" as="t" hint-placeholder-count="4">
+      <a href="{{t.href}}" style="position: absolute; left: {{t.x}}; top: {{t.y}}; transform: translate(-50%, -100%); display: flex; flex-direction: column; gap: 1px; padding: 7px 12px 8px; min-width: 120px; background: rgba(16, 19, 23, 0.94); border: 1px solid #343B45; border-radius: 10px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45); text-decoration: none; color: #E9EBEE; white-space: nowrap">
+        <span style="display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13.5px"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{t.dot}}"></span>{{t.name}}</span>
+        <span style="font-size: 11.5px; color: {{t.subc}}; padding-left: 15px">{{t.sub}}</span>
+      </a>
+    </sc-for>
+    <a href="NewWorkspace.dc.html" style="position: absolute; left: {{plus.x}}; top: {{plus.y}}; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #E9EBEE; font-size: 12.5px; font-weight: 600; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7)">
+      <span style="width: 40px; height: 40px; border-radius: 50%; background: #1B1F2B; border: 2px solid #8C9BFF; color: #AEB8FF; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4)">+</span>New workspace
+    </a>
+  </div>
+  <div style="position: absolute; left: 20px; bottom: 150px; display: flex; flex-direction: column; gap: 6px">
+    <button type="button" onClick="{{zin}}" aria-label="Zoom in" style="width: 40px; height: 40px; border-radius: 10px; background: rgba(20, 23, 28, 0.94); border: 1px solid #2F353E; color: #E9EBEE; font: inherit; font-size: 20px; cursor: pointer">+</button>
+    <button type="button" onClick="{{zout}}" aria-label="Zoom out" style="width: 40px; height: 40px; border-radius: 10px; background: rgba(20, 23, 28, 0.94); border: 1px solid #2F353E; color: #E9EBEE; font: inherit; font-size: 20px; cursor: pointer">−</button>
+    <button type="button" onClick="{{reset}}" aria-label="Recenter view" style="width: 40px; height: 40px; border-radius: 10px; background: rgba(20, 23, 28, 0.94); border: 1px solid #2F353E; color: #E9EBEE; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M12 9a3 3 0 100 6 3 3 0 000-6z"></path></svg></button>
+  </div>
+  <div style="position: absolute; left: 20px; bottom: 104px; font-size: 12px; color: #A2A9B4; background: rgba(16, 19, 23, 0.85); padding: 6px 10px; border-radius: 8px">Drag to pan · scroll to zoom · click a building</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"shift":{"editor":"int","default":0,"min":-600,"max":600,"unit":"px"},"zoom":{"editor":"range","default":1,"min":0.6,"max":1.4,"step":0.05},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { zf: 1, dx: 0, dy: 0, drag: false, px: 0, py: 0, ox: 0, oy: 0 }; }
+  renderVals() {
+    const A = 32, B = 16, OX = 720, OY = 210;
+    const P = (x, y, z) => [OX + (x - y) * A, OY + (x + y) * B - (z || 0)];
+    const S = [];
+    const base = { clip: 'none', rad: '0', op: '1', bd: 'none', sh: 'none' };
+    const poly = (pts, bg, op) => {
+      const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+      const l = Math.min.apply(null, xs), t = Math.min.apply(null, ys);
+      const w = Math.max(1, Math.max.apply(null, xs) - l), h = Math.max(1, Math.max.apply(null, ys) - t);
+      S.push(Object.assign({}, base, { l: l + 'px', t: t + 'px', w: w + 'px', h: h + 'px', bg: bg, op: String(op == null ? 1 : op),
+        clip: 'polygon(' + pts.map(p => (p[0] - l).toFixed(1) + 'px ' + (p[1] - t).toFixed(1) + 'px').join(', ') + ')' }));
+    };
+    const quad = (a, b, c, d, bg, op) => poly([a, b, c, d], bg, op);
+    const box = (x, y, w, d, h, z0, top, lf, rt) => {
+      const z1 = z0 + h;
+      quad(P(x, y + d, z0), P(x + w, y + d, z0), P(x + w, y + d, z1), P(x, y + d, z1), lf);
+      quad(P(x + w, y, z0), P(x + w, y + d, z0), P(x + w, y + d, z1), P(x + w, y, z1), rt);
+      quad(P(x, y, z1), P(x + w, y, z1), P(x + w, y + d, z1), P(x, y + d, z1), top);
+    };
+    const flat = (x, y, w, d, z, bg, op) => quad(P(x, y, z), P(x + w, y, z), P(x + w, y + d, z), P(x, y + d, z), bg, op);
+    const ell = (x, y, z, r, bg, o) => { const c = P(x, y, z), w = 2 * Math.SQRT2 * r * A, h = 2 * Math.SQRT2 * r * B; S.push(Object.assign({}, base, { l: (c[0] - w / 2) + 'px', t: (c[1] - h / 2) + 'px', w: w + 'px', h: h + 'px', bg: bg, rad: '50%' }, o || {})); };
+    const rect = (l, t, w, h, bg, o) => S.push(Object.assign({}, base, { l: l + 'px', t: t + 'px', w: w + 'px', h: h + 'px', bg: bg }, o || {}));
+    const seg = (x1, y1, x2, y2, z, bg, th) => { const a = P(x1, y1, z), b = P(x2, y2, z), t = th || 1.2; quad(a, b, [b[0], b[1] + t], [a[0], a[1] + t], bg); };
+    const planeY = (y, x1, x2, z1, z2, bg, op) => quad(P(x1, y, z1), P(x2, y, z1), P(x2, y, z2), P(x1, y, z2), bg, op);
+    const planeX = (x, y1, y2, z1, z2, bg, op) => quad(P(x, y1, z1), P(x, y2, z1), P(x, y2, z2), P(x, y1, z2), bg, op);
+    const dashEdge = (x1, y1, x2, y2) => { const L = Math.hypot(x2 - x1, y2 - y1), n = Math.floor(L / 0.4); for (let i = 0; i < n; i += 2) { const a = i / n, b = (i + 1) / n; seg(x1 + (x2 - x1) * a, y1 + (y2 - y1) * a, x1 + (x2 - x1) * b, y1 + (y2 - y1) * b, 0.3, '#EEF1FF', 2); } };
+
+    const N = 20;
+    box(0, 0, N, N, 26, -26, '#5C9A47', '#6B4E36', '#58402C');
+    flat(0, 0, N, N, -26, '#5C9A47');
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if ((i + j) % 2) flat(i, j, 1, 1, 0, '#58944A');
+    box(0, 0, N, 0.01, 0, 0, '#5C9A47', '#5C9A47', '#5C9A47');
+    const road = (x, y, w, d) => { flat(x, y, w, d, 0.2, '#9AA0A8'); };
+    road(0, 9, N, 2); road(9, 0, 2, N);
+    for (let k = 0; k < N; k++) for (let j = 0; j < 2; j++) { if (!(k >= 9 && k < 11)) { flat(k + 0.06, 9 + j + 0.06, 0.88, 0.88, 0.3, (k + j) % 2 ? '#A6ACB4' : '#8F959D'); flat(9 + j + 0.06, k + 0.06, 0.88, 0.88, 0.3, (k + j) % 2 ? '#8F959D' : '#A6ACB4'); } }
+    [[0, 9, 9, 9], [11, 9, N, 9], [0, 11, 9, 11], [11, 11, N, 11], [9, 0, 9, 9], [11, 0, 11, 9], [9, 11, 9, N], [11, 11, 11, N]].forEach(c => seg(c[0], c[1], c[2], c[3], 0.4, '#D2D6DB', 2.2));
+    ell(10, 10, 0.4, 2.5, '#B4B9C0', { bd: '3px solid #D2D6DB' });
+    ell(10, 10, 0.5, 1.9, '#A2A8B0', { bd: '1.5px dashed #C5C9CF' });
+
+    const objs = [];
+    const building = (x, y, w, d, h, roof, lit, solar) => objs.push({ k: x + w / 2 + y + d / 2, draw: () => {
+      flat(x - 0.6, y - 0.6, w + 1.2, d + 1.2, 0.3, '#8F959D');
+      box(x - 0.1, y - 0.1, w + 0.2, d + 0.2, 4, 0, '#7F858D', '#8E949C', '#747A82');
+      box(x, y, w, d, h, 4, '#D8D2C6', '#E7E1D5', '#C7C0B3');
+      const rows = Math.floor((h - 26) / 20);
+      for (let r = 0; r < rows; r++) {
+        const z1 = 30 + r * 20, z2 = z1 + 12;
+        let i = 0;
+        for (let k = x + 0.35; k + 0.6 <= x + w - 0.2; k += 0.95, i++) { const on = lit && ((i * 5 + r * 3) % 4 !== 0); planeY(y + d, k - 0.05, k + 0.65, z1 - 2, z2 + 2, '#8D867A'); planeY(y + d + 0.01, k, k + 0.6, z1, z2, on ? 'linear-gradient(160deg,#FFE7A8,#F2B544)' : 'linear-gradient(160deg,#8DB6E4,#3F6EA6)'); }
+        i = 0;
+        for (let k = y + 0.35; k + 0.6 <= y + d - 0.2; k += 0.95, i++) { const on = lit && ((i * 3 + r) % 3 !== 1); planeX(x + w, k - 0.05, k + 0.65, z1 - 2, z2 + 2, '#7E776B'); planeX(x + w + 0.01, k, k + 0.6, z1, z2, on ? 'linear-gradient(200deg,#F6D88E,#D99A2B)' : 'linear-gradient(200deg,#7CA6D6,#355F94)'); }
+      }
+      const dm = x + w / 2;
+      planeY(y + d + 0.01, dm - 0.8, dm + 0.8, 4, 24, '#4A5160');
+      planeY(y + d + 0.02, dm - 0.7, dm + 0.7, 4, 22, 'linear-gradient(160deg,#9CC4EE,#4C7DB8)');
+      planeY(y + d + 0.03, dm - 0.03, dm + 0.03, 4, 22, '#4A5160');
+      box(dm - 1.1, y + d, 2.2, 0.7, 3, 25, roof[0], roof[1], roof[2]);
+      box(x - 0.15, y - 0.15, w + 0.3, d + 0.3, 7, h + 4, roof[0], roof[1], roof[2]);
+      flat(x + 0.25, y + 0.25, w - 0.5, d - 0.5, h + 11.1, roof[3]);
+      box(x + w * 0.55, y + 0.7, 1.1, 0.9, 10, h + 11, '#B9BEC6', '#A2A8B0', '#8A9098');
+      ell(x + w * 0.55 + 0.55, y + 1.15, h + 21.2, 0.3, '#6F767F', { bd: '2px solid #D2D6DB' });
+      box(x + 0.7, y + d - 1.5, 0.7, 0.7, 8, h + 11, '#B9BEC6', '#A2A8B0', '#8A9098');
+      if (solar) for (let s = 0; s < 3; s++) flat(x + 0.6 + s * 1.1, y + 0.6, 0.9, 1.4, h + 11.5, 'linear-gradient(135deg,#2E4C7A,#1B2F4E)');
+    } });
+    building(13, 2, 6, 5, 86, ['#34B394', '#2A8F77', '#1F6D5A', '#2A9C80'], true, true);
+    building(2, 2, 5, 4, 66, ['#4A7FE0', '#3A66B8', '#2C4F8E', '#4172CC'], false, false);
+    building(2, 13, 5, 4, 50, ['#D7655A', '#B04F46', '#873B34', '#C25A50'], false, false);
+
+    objs.push({ k: -1, draw: () => {
+      flat(13, 13, 5, 4, 0.2, '#C2A878');
+      for (let i = 0; i < 5; i++) seg(13.2, 13.4 + i * 0.8, 17.8, 13.4 + i * 0.8, 0.25, '#B29868', 1.5);
+      dashEdge(13, 13, 18, 13); dashEdge(18, 13, 18, 17); dashEdge(13, 17, 18, 17); dashEdge(13, 13, 13, 17);
+    } });
+
+    const hedge = (x, y, w, d) => objs.push({ k: x + w / 2 + y + d / 2 - 0.5, draw: () => box(x, y, w, d, 9, 0, '#3E8A45', '#357A3C', '#2C6A33') });
+    hedge(12, 8, 8, 0.5); hedge(1, 8, 7.5, 0.5); hedge(1, 18.3, 7.5, 0.5); hedge(8.3, 12.5, 0.5, 6);
+    const flowers = (x, y, w, d) => objs.push({ k: x + y, draw: () => { box(x, y, w, d, 5, 0, '#6B4E36', '#5A412C', '#4A3524'); const cs = ['#FF6B8A', '#FFD25E', '#FFFFFF', '#C78BFF']; for (let i = 0; i < w * 3; i++) for (let j = 0; j < d * 3; j++) { const c = P(x + 0.17 + i / 3, y + 0.17 + j / 3, 6); rect(c[0] - 3, c[1] - 3, 6, 6, cs[(i + j * 2) % 4], { rad: '50%' }); } } });
+    flowers(11.7, 11.7, 1.3, 1.3); flowers(7, 7, 1.3, 1.3); flowers(11.7, 7, 1.3, 1.3);
+
+    const tree = (x, y) => objs.push({ k: x + y + 1, draw: () => {
+      ell(x + 0.5, y + 0.5, 0.3, 0.55, 'rgba(0,0,0,0.22)');
+      box(x + 0.42, y + 0.42, 0.16, 0.16, 18, 0, '#7A5A3C', '#6A4E34', '#553E28');
+      const c = P(x + 0.5, y + 0.5, 34);
+      rect(c[0] - 19, c[1] - 14, 38, 34, '#2E8A57', { rad: '50%', sh: 'inset -7px -7px 0 rgba(0,0,0,0.2)' });
+      rect(c[0] - 13, c[1] - 30, 28, 28, '#3BA56A', { rad: '50%', sh: 'inset -5px -5px 0 rgba(0,0,0,0.16)' });
+      rect(c[0] - 4, c[1] - 36, 12, 12, '#56C083', { rad: '50%' });
+    } });
+    [[0.4, 18.4], [18.6, 0.4], [18.4, 18.4], [5.5, 7.2], [18.4, 11.8], [12, 18.4], [0.4, 7.2], [0.4, 0.4], [7.5, 0.4], [15.5, 18.6]].forEach(t => tree(t[0], t[1]));
+
+    const lamp = (x, y) => objs.push({ k: x + y + 0.2, draw: () => {
+      box(x, y, 0.12, 0.12, 50, 0, '#2A2F37', '#3A414C', '#22262C');
+      const c = P(x + 0.06, y + 0.06, 54);
+      rect(c[0] - 7, c[1] - 4, 14, 8, '#FFE7A3', { rad: '50%', sh: '0 0 18px 7px rgba(255,214,120,0.55)' });
+    } });
+    [[8.5, 8.5], [11.5, 8.5], [8.5, 11.5], [11.5, 11.5], [3, 8.5], [16.5, 11.5], [8.5, 3], [11.5, 16.5]].forEach(l => lamp(l[0], l[1]));
+    const bench = (x, y) => objs.push({ k: x + y + 0.5, draw: () => { box(x + 0.05, y + 0.05, 0.1, 0.4, 5, 0, '#3A414C', '#2B313A', '#232830'); box(x + 1.05, y + 0.05, 0.1, 0.4, 5, 0, '#3A414C', '#2B313A', '#232830'); box(x, y, 1.2, 0.5, 2, 5, '#B58556', '#9A6E44', '#7E5A37'); box(x, y - 0.05, 1.2, 0.1, 9, 6, '#B58556', '#9A6E44', '#7E5A37'); } });
+    bench(6.3, 11.6); bench(12.5, 11.6);
+    const car = (x, y, along, c) => objs.push({ k: x + y + 1, draw: () => {
+      const w = along ? 1.7 : 0.85, d = along ? 0.85 : 1.7;
+      ell(x + w / 2, y + d / 2, 0.4, 0.95, 'rgba(0,0,0,0.25)');
+      box(x, y, w, d, 9, 3, c[0], c[1], c[2]);
+      if (along) box(x + 0.4, y + 0.08, 0.9, 0.69, 8, 12, c[0], 'linear-gradient(160deg,#BFD8F2,#5C86B4)', 'linear-gradient(200deg,#A9C8EA,#4C76A4)');
+      else box(x + 0.08, y + 0.4, 0.69, 0.9, 8, 12, c[0], 'linear-gradient(160deg,#BFD8F2,#5C86B4)', 'linear-gradient(200deg,#A9C8EA,#4C76A4)');
+    } });
+    car(3.2, 9.15, true, ['#E5584A', '#C2473B', '#9E392F']); car(10.1, 14.5, false, ['#F2B544', '#D19A36', '#A9792A']); car(15.5, 10.05, true, ['#EDEFF2', '#C9CED5', '#A9B0B9']);
+
+    objs.push({ k: 20, draw: () => {
+      ell(10, 10, 0.5, 1.4, '#6F7680');
+      const top = P(10, 10, 14), w = 2 * Math.SQRT2 * 1.4 * A;
+      rect(top[0] - w / 2, top[1], w, 14, '#C9CED5');
+      ell(10, 10, 14, 1.4, '#E1E4E8', { bd: '2px solid #F2F4F6' });
+      ell(10, 10, 14, 0.95, '#2C3550', { bd: '3px solid #8C9BFF', sh: '0 0 18px rgba(140,155,255,0.8)' });
+      ell(10, 10, 14, 0.4, '#C3CAFF', { sh: '0 0 24px 8px rgba(140,155,255,0.85)' });
+      const c = P(10, 10, 14);
+      rect(c[0] - 10, c[1] - 104, 20, 104, 'linear-gradient(to top, rgba(140,155,255,0.65), rgba(140,155,255,0))', { rad: '10px' });
+      ell(10, 10, 76, 0.95, 'transparent', { bd: '2px solid rgba(79,209,181,0.9)', sh: '0 0 14px rgba(79,209,181,0.6)' });
+      ell(10, 10, 76, 1.4, 'transparent', { bd: '1.5px dashed rgba(79,209,181,0.6)' });
+    } });
+
+    objs.sort((a, b) => a.k - b.k).forEach(o => o.draw());
+
+    const tag = (x, y, z, name, sub, dot, href, subc) => { const p = P(x, y, z); return { x: p[0] + 'px', y: p[1] + 'px', name: name, sub: sub, dot: dot, href: href, subc: subc || '#A2A9B4' }; };
+    const pl = P(15.5, 15, 0);
+    const st = this.state, zf = st.zf;
+    return {
+      shapes: S,
+      sx: (Number(this.props.shift || 0) + st.dx) + 'px',
+      sy: (Number(this.props.shiftY || 0) + st.dy) + 'px',
+      zoom: String(Number(this.props.zoom || 1) * zf),
+      cursor: st.drag ? 'grabbing' : 'grab',
+      down: (e) => this.setState({ drag: true, px: e.clientX, py: e.clientY, ox: st.dx, oy: st.dy }),
+      move: (e) => { if (this.state.drag) this.setState({ dx: this.state.ox + e.clientX - this.state.px, dy: this.state.oy + e.clientY - this.state.py }); },
+      up: () => { if (this.state.drag) this.setState({ drag: false }); },
+      wheel: (e) => this.setState({ zf: Math.max(0.6, Math.min(1.8, this.state.zf * (e.deltaY > 0 ? 0.92 : 1.08))) }),
+      zin: () => this.setState({ zf: Math.min(1.8, zf * 1.15) }),
+      zout: () => this.setState({ zf: Math.max(0.6, zf / 1.15) }),
+      reset: () => this.setState({ zf: 1, dx: 0, dy: 0 }),
+      plus: { x: pl[0] + 'px', y: pl[1] + 'px' },
+      tags: [
+        tag(16, 4.5, 130, 'Ryscript', '9 agents · 2 working', '#4FD1B5', 'Workspace.dc.html', '#4FD1B5'),
+        tag(4.5, 4, 104, 'News website', '2 agents · idle', '#6B727D', 'Workspace.dc.html'),
+        tag(4.5, 15, 86, 'Alumni website', '1 agent · setup needed', '#F2B544', 'Workspace.dc.html', '#F2B544'),
+        tag(10, 10, 156, 'Jarvis', 'Main assistant · listening', '#8C9BFF', 'JarvisChat.dc.html', '#AEB8FF')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

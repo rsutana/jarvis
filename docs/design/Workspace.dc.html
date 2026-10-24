@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workspace office</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D10}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{position:relative;height:100vh;min-height:760px;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0B0D10;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.drawer{position:absolute;top:72px;right:16px;bottom:96px;max-width:calc(100% - 32px);background:rgba(17,20,25,0.97);border:1px solid #2F353E;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.x{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#A2A9B4;text-decoration:none;font-size:20px;background:transparent;border:0;cursor:pointer}
+.x:hover{background:#1F242C;color:#fff}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn:hover{background:#222731;color:#fff}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.ghost{background:transparent}
+.card{background:#14171C;border:1px solid #272C34;border-radius:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;border:1px solid #2F353E;color:#C2C8D1;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+</style>
+</helmet>
+<div class="app">
+  <div style="position: absolute; inset: 0"><dc-import name="OfficeScene" shift="-150" zoom="0.88" selected="{{sel}}" on-agent="{{pickAgent}}" hint-size="100%,100%"></dc-import></div>
+
+  <section aria-label="Workspace summary" style="position: absolute; top: 72px; left: 16px; width: 260px; max-width: calc(100% - 32px); padding: 14px 16px; background: rgba(17, 20, 25, 0.94); border: 1px solid #2F353E; border-radius: 14px; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; gap: 10px; align-items: center"><span style="width: 30px; height: 30px; border-radius: 8px; background: #2FA58A; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: #0D0F12">RS</span><div><div style="font-weight: 600">Ryscript</div><div class="faint" style="font-size: 12px">9 agents · orchestrator Cyfervoid</div></div></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; text-align: center; font-size: 12px">
+      <a href="Tasks.dc.html" class="card" style="padding: 8px 4px; text-decoration: none; color: inherit"><b style="display: block; font-size: 16px">2</b><span class="faint">active</span></a>
+      <a href="Inbox.dc.html" class="card" style="padding: 8px 4px; text-decoration: none; color: inherit"><b style="display: block; font-size: 16px; color: #F2B544">1</b><span class="faint">review</span></a>
+      <a href="Changes.dc.html" class="card" style="padding: 8px 4px; text-decoration: none; color: inherit"><b style="display: block; font-size: 16px">2</b><span class="faint">open PRs</span></a>
+    </div>
+    <a class="btn pri" href="Tasks.dc.html">+ New task</a>
+  </section>
+
+  <aside class="drawer" aria-label="Agent quick view" style="width: 360px">
+    <div style="display: flex; gap: 12px; align-items: center; padding: 16px 16px 12px">
+      <span style="width: 48px; height: 48px; border-radius: 50%; background: {{cur.c}}; color: #0D0F12; font-weight: 700; font-size: 18px; display: inline-flex; align-items: center; justify-content: center">{{cur.i}}</span>
+      <div style="flex: 1; min-width: 0"><div style="font-weight: 600; font-size: 17px">{{cur.name}}</div><div class="faint" style="font-size: 12.5px">{{cur.role}}</div></div>
+      <a class="x" href="Workspace.dc.html" aria-label="Close">×</a>
+    </div>
+    <div style="flex: 1; overflow: auto; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="chip"><span class="dot" style="background: {{cur.sc}}"></span>{{cur.st}}</span><span class="chip mono">{{cur.model}}</span><span class="chip">Claude Code LS</span></div>
+      <div class="card" style="padding: 12px"><div class="lbl">Now</div><div style="margin-top: 4px; font-size: 13.5px">{{cur.task}}</div><div style="height: 4px; background: #22272F; border-radius: 2px; margin-top: 10px"><div style="height: 4px; border-radius: 2px; width: {{cur.pct}}; background: {{cur.sc}}"></div></div></div>
+      <div>
+        <div class="lbl" style="margin-bottom: 6px">Recent</div>
+        <div style="font-size: 12.5px; display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; gap: 8px"><span class="mono faint">T-075</span><span style="flex: 1">Fix code block caption contrast</span><span style="color: #8C9BFF">Merged</span></div>
+          <div style="display: flex; gap: 8px"><span class="mono faint">T-073</span><span style="flex: 1">Build &amp; validate new module</span><span style="color: #8C9BFF">Merged</span></div>
+          <div style="display: flex; gap: 8px"><span class="mono faint">T-070</span><span style="flex: 1">Breadcrumb trail module</span><span style="color: #8C9BFF">Merged</span></div>
+        </div>
+      </div>
+      <div><div class="lbl" style="margin-bottom: 6px">Skills</div><div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="chip">HubSpot Module Dev</span><span class="chip">Module Opportunity Research</span></div></div>
+      <div><div class="lbl" style="margin-bottom: 6px">Integrations</div><div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="chip">Cyfervoid.Com · ask</span><span class="chip">Git · allowed</span></div></div>
+    </div>
+    <div style="padding: 12px 16px 16px; border-top: 1px solid #22262D; display: flex; flex-direction: column; gap: 8px">
+      <a class="btn pri" href="TaskRun.dc.html">Open current run</a>
+      <div style="display: flex; gap: 8px"><button class="btn" type="button" style="flex: 1">Message</button><button class="btn" type="button" style="flex: 1">Assign task</button><a class="btn" href="AgentEditor.dc.html" style="flex: 1">Edit</a></div>
+    </div>
+  </aside>
+
+  <div style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Hud" mode="workspace" active="Overview" ws="Ryscript" page="Office" status="2 working · 7 idle" hint-size="100%,100%"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { sel: 0 }; }
+  renderVals() {
+    const S = { w: ['#4FD1B5', 'Working'], r: ['#F2B544', 'Waiting for your review'], i: ['#6B727D', 'Idle'], b: ['#FF8A7A', 'Blocked'] };
+    const raw = [
+      { i: 'R', c: '#5ED0C0', name: 'Rex', role: 'HubSpot Module Developer', s: 'w', task: 'T-076 · Pricing table module, writing fields.json', pct: '64%', model: 'Sonnet 5.5' },
+      { i: 'K', c: '#FF8A7A', name: 'Kei', role: 'QA Tester', s: 'w', task: 'T-077 · QA pass on 5 new modules', pct: '30%', model: 'Sonnet 5.5' },
+      { i: 'S', c: '#B9A2FF', name: 'Shake', role: 'Customer Support', s: 'r', task: 'T-022 · Email draft waiting in Inbox', pct: '100%', model: 'Haiku 5.5' },
+      { i: 'M', c: '#6FD3E8', name: 'Mika', role: 'Content Writer', s: 'i', task: 'Idle · next: Monday blog mission', pct: '0%', model: 'Sonnet 5.5' },
+      { i: 'I', c: '#F2B544', name: 'Ivo', role: 'HubSpot Theme Developer', s: 'i', task: 'Idle', pct: '0%', model: 'Sonnet 5.5' },
+      { i: 'N', c: '#9FE07A', name: 'Nia', role: 'Market Researcher', s: 'i', task: 'Idle', pct: '0%', model: 'Sonnet 5.5' },
+      { i: 'T', c: '#7FB2FF', name: 'Tomo', role: 'HubSpot Theme Build Engineer', s: 'i', task: 'Idle', pct: '0%', model: 'Opus 5.5' },
+      { i: 'L', c: '#FFB3D1', name: 'Lux', role: 'HubSpot Theme Designer', s: 'i', task: 'Idle', pct: '0%', model: 'Sonnet 5.5' },
+      { i: 'W', c: '#E8C99A', name: 'Wren', role: 'Theme Market Researcher', s: 'b', task: 'Blocked · needs HubSpot Marketplace login', pct: '20%', model: 'Sonnet 5.5' }
+    ];
+    const a = raw[this.state.sel];
+    return {
+      sel: this.state.sel,
+      pickAgent: (i) => this.setState({ sel: i }),
+      cur: Object.assign({}, a, { sc: S[a.s][0], st: S[a.s][1] })
+    };
+  }
+}
+</script>
+</body>
+</html>

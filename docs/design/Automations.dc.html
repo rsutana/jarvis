@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Automations</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D10}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{position:relative;height:100vh;min-height:760px;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0B0D10;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.drawer{position:absolute;top:72px;right:16px;bottom:96px;max-width:calc(100% - 32px);background:rgba(17,20,25,0.97);border:1px solid #2F353E;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.dh{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 20px;border-bottom:1px solid #262B33;flex-wrap:wrap;min-height:60px}
+.dh h1{margin:0;font-size:17px;font-weight:600}
+.x{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#A2A9B4;text-decoration:none;font-size:20px}
+.x:hover{background:#1F242C;color:#fff}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn:hover{background:#222731;color:#fff}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+.field{width:100%;min-height:40px;background:#0F1216;border:1px solid #2F353E;border-radius:8px;color:#E9EBEE;font:inherit;padding:8px 12px}
+.fl{display:block;font-size:12.5px;color:#A2A9B4;margin-bottom:6px;font-weight:500}
+.tog{width:36px;height:20px;border-radius:10px;position:relative;flex:none;border:0;cursor:pointer}
+.tog span{position:absolute;top:2px;width:16px;height:16px;border-radius:50%}
+.arow{display:flex;gap:12px;align-items:center;padding:13px 16px;border-bottom:1px solid #1E2228;flex-wrap:wrap}
+.trig{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #2F353E;border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;min-height:56px}
+</style>
+</helmet>
+<div class="app">
+  <div style="position: absolute; inset: 0"><dc-import name="LobbyScene" shift="-360" hint-size="100%,100%"></dc-import></div>
+
+  <aside class="drawer" aria-label="Automations" style="width: 880px">
+    <div class="dh">
+      <h1>Automations <span class="faint" style="font-weight: 400; font-size: 13px">Missions that start on a schedule or an event</span></h1>
+      <div style="flex: 1"></div>
+      <button class="btn sm pri" type="button">+ New automation</button>
+      <a class="x" href="Main.dc.html" aria-label="Close">×</a>
+    </div>
+    <div style="flex: 1; min-height: 0; display: flex; flex-wrap: wrap; overflow: auto">
+      <section aria-label="Automation list" style="flex: 999 1 400px; min-width: 0">
+        <sc-for list="{{autos}}" as="a" hint-placeholder-count="4">
+          <div class="arow" style="background: {{a.bg}}">
+            <button class="tog" type="button" role="switch" aria-checked="{{a.onS}}" aria-label="Enable {{a.name}}" style="background: {{a.tb}}"><span style="left: {{a.tl}}; background: {{a.tk}}"></span></button>
+            <div style="flex: 1; min-width: 180px"><div style="font-weight: 500">{{a.name}}</div><div class="faint" style="font-size: 12.5px">{{a.trig}} · {{a.ws}}</div></div>
+            <div style="font-size: 12px; text-align: right"><div class="muted">Next: {{a.next}}</div><div style="color: {{a.lc}}">Last: {{a.last}}</div></div>
+            <button class="btn sm" type="button" onClick="{{a.pick}}">Edit</button>
+          </div>
+        </sc-for>
+      </section>
+      <section aria-label="Edit automation" style="flex: 1 1 340px; border-left: 1px solid #22262D; background: #13161B; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+        <div class="lbl">Edit automation</div>
+        <div><label class="fl" for="an">Name</label><input id="an" class="field" value="{{cur.name}}"></div>
+        <div>
+          <span class="fl">Trigger</span>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+            <button class="trig" type="button" aria-pressed="true" style="border-color: #5C67B8; background: #181C26"><span style="font-weight: 500; font-size: 13px">Schedule</span><span class="faint" style="font-size: 12px">Day, week, cron</span></button>
+            <button class="trig" type="button" aria-pressed="false"><span style="font-weight: 500; font-size: 13px">New email</span><span class="faint" style="font-size: 12px">From an integration</span></button>
+            <button class="trig" type="button" aria-pressed="false"><span style="font-weight: 500; font-size: 13px">Git event</span><span class="faint" style="font-size: 12px">Push, merge, tag</span></button>
+            <button class="trig" type="button" aria-pressed="false"><span style="font-weight: 500; font-size: 13px">Webhook</span><span class="faint" style="font-size: 12px">Any app can call it</span></button>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <div><label class="fl" for="ar">Repeat</label><select id="ar" class="field"><option>Every weekday</option><option>Every day</option><option>Weekly</option><option>Custom cron</option></select></div>
+          <div><label class="fl" for="at">At</label><input id="at" class="field" value="9:00 AM"></div>
+        </div>
+        <div><label class="fl" for="aw">Send to</label><select id="aw" class="field"><option>Ryscript → orchestrator</option><option>Jarvis (decides workspace)</option></select></div>
+        <div><label class="fl" for="ap">Mission prompt</label><textarea id="ap" class="field" rows="3" style="resize: vertical">Research 5 HubSpot module ideas missing from our library, build them, run QA, and open one merge request.</textarea></div>
+        <div><label class="fl" for="aa">If the plan has more than 8 tasks</label><select id="aa" class="field"><option>Ask me first</option><option>Run anyway</option><option>Skip this run</option></select></div>
+        <div style="display: flex; gap: 8px; margin-top: auto"><button class="btn pri" type="button" style="flex: 1">Save</button><button class="btn" type="button">Run now</button></div>
+      </section>
+    </div>
+  </aside>
+
+  <div style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Hud" mode="global" active="Automations" page="Automations" status="3 workspaces" hint-size="100%,100%"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { sel: 0 }; }
+  renderVals() {
+    const raw = [
+      { name: 'Daily HubSpot module batch', trig: 'Weekdays 9:00 AM', ws: 'Ryscript', next: 'Mon 9:00 AM', last: 'today · succeeded', lc: '#4FD1B5', on: true },
+      { name: 'Weekly Cyfervoid blog article', trig: 'Mondays 9:00 AM', ws: 'Ryscript', next: 'Mon 9:00 AM', last: 'never run', lc: '#8A919C', on: true },
+      { name: 'Reply to support emails', trig: 'New email · Cyfervoid GMail', ws: 'Ryscript', next: 'on event', last: '11:58 · waiting for approval', lc: '#F2B544', on: true },
+      { name: 'Nightly news digest', trig: 'Every day 11:00 PM', ws: 'News website', next: '—', last: 'Oct 12 · failed (limit)', lc: '#FF9C8E', on: false }
+    ];
+    const sel = this.state.sel;
+    const autos = raw.map((a, ix) => Object.assign({}, a, { onS: a.on ? 'true' : 'false', tb: a.on ? '#4FD1B5' : '#2F353E', tk: a.on ? '#0D0F12' : '#A2A9B4', tl: a.on ? '18px' : '2px', bg: ix === sel ? '#1A1E27' : 'transparent', pick: () => this.setState({ sel: ix }) }));
+    return { autos, cur: raw[sel] };
+  }
+}
+</script>
+</body>
+</html>

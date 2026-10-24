@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Changes and merge review</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0D10}
+a{color:#AEB8FF}a:hover{color:#D3D8FF}
+.app{position:relative;height:100vh;min-height:760px;overflow:hidden;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#E9EBEE;background:#0B0D10;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.drawer{position:absolute;top:72px;right:16px;bottom:96px;max-width:calc(100% - 32px);background:rgba(17,20,25,0.97);border:1px solid #2F353E;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.dh{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 20px;border-bottom:1px solid #262B33;flex-wrap:wrap;min-height:60px}
+.dh h1{margin:0;font-size:17px;font-weight:600}
+.x{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#A2A9B4;text-decoration:none;font-size:20px}
+.x:hover{background:#1F242C;color:#fff}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7D8590;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:1px solid #2F353E;background:#1A1E24;color:#E9EBEE;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:none}
+.btn:hover{background:#222731;color:#fff}
+.btn.pri{background:#8C9BFF;border-color:#8C9BFF;color:#0D0F12}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12.5px}
+.card{background:#14171C;border:1px solid #272C34;border-radius:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;border:1px solid #2F353E;color:#C2C8D1;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.av{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#0D0F12;flex:none}
+.muted{color:#A2A9B4}.faint{color:#8A919C}
+.seg{display:flex;gap:4px;padding:4px;background:#14171C;border:1px solid #272C34;border-radius:10px}
+.seg button{flex:1;min-height:32px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#A2A9B4;font:inherit;font-size:12.5px;cursor:pointer}
+.seg button[aria-pressed=true]{background:#262B36;color:#E9EBEE}
+.br{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:11px;border:1px solid #272C34;border-radius:10px;background:#14171C;color:inherit;font:inherit;cursor:pointer}
+.br:hover{border-color:#3A414C}
+.diff{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.7;overflow-x:auto}
+.ln{display:flex;white-space:pre}
+.ln .n{width:40px;text-align:right;padding-right:12px;color:#5E6570;flex:none;user-select:none}
+.add{background:#13261F;color:#BFEFDF}
+.ctx{color:#A2A9B4}
+.file{display:flex;justify-content:space-between;gap:8px;padding:7px 12px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9CFD8}
+</style>
+</helmet>
+<div class="app">
+  <div style="position: absolute; inset: 0"><dc-import name="OfficeScene" shift="-400" hint-size="100%,100%"></dc-import></div>
+
+  <aside class="drawer" aria-label="Changes" style="width: 1020px">
+    <div class="dh">
+      <h1>Changes</h1>
+      <span class="chip mono"><span class="dot" style="background: #4FD1B5"></span>main · clean</span>
+      <div style="flex: 1"></div>
+      <a class="x" href="Workspace.dc.html" aria-label="Close">×</a>
+    </div>
+    <div style="flex: 1; min-height: 0; display: flex; flex-wrap: wrap; overflow: auto">
+      <section aria-label="Branches" style="flex: 1 1 280px; max-width: 100%; padding: 14px; border-right: 1px solid #22262D; display: flex; flex-direction: column; gap: 8px">
+        <div class="seg" role="group" aria-label="Filter"><button type="button" aria-pressed="true">Open 2</button><button type="button" aria-pressed="false">Merged 21</button></div>
+        <sc-for list="{{brs}}" as="b" hint-placeholder-count="4">
+          <button class="br" type="button" onClick="{{b.pick}}" aria-pressed="{{b.on}}" style="border-color: {{b.ring}}">
+            <span class="mono" style="font-size: 12px; color: #E9EBEE; word-break: break-all">{{b.name}}</span>
+            <span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span class="chip" style="border-color: {{b.sc}}; color: {{b.sc}}">{{b.st}}</span><span class="faint" style="font-size: 12px">{{b.task}} · {{b.who}}</span></span>
+            <span style="display: flex; justify-content: space-between; font-size: 12px"><span class="faint">{{b.when}}</span><span class="mono"><span style="color: #4FD1B5">{{b.add}}</span> <span style="color: #FF9C8E">{{b.del}}</span></span></span>
+          </button>
+        </sc-for>
+      </section>
+      <section aria-label="Change detail" style="flex: 999 1 520px; min-width: 0; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start">
+          <div style="flex: 1; min-width: 240px">
+            <div class="mono" style="font-size: 13.5px; word-break: break-all">{{cur.name}}</div>
+            <div class="faint" style="font-size: 12.5px; margin-top: 4px">{{cur.who}} · {{cur.task}} → main · 3 commits · <span style="color: #4FD1B5">{{cur.add}}</span> <span style="color: #FF9C8E">{{cur.del}}</span></div>
+            <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap"><span class="chip" style="border-color: {{cur.sc}}; color: {{cur.sc}}">{{cur.st}}</span><span class="chip" style="border-color: {{cur.qc}}; color: {{cur.qc}}">{{cur.qa}}</span><span class="chip">No conflicts</span></div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <a class="btn sm" href="TaskRun.dc.html">Open task</a>
+            <button class="btn sm" type="button">Request changes</button>
+            <button class="btn sm pri" type="button">{{cur.action}}</button>
+          </div>
+        </div>
+        <div class="card" style="padding: 10px 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px">
+          <span class="av" style="width: 26px; height: 26px; font-size: 11px; background: #FF8A7A">K</span>
+          <span style="flex: 1; min-width: 200px"><b>Kei · QA:</b> <span class="muted">14 checks passed. Rendered at 375 and 1280 px. No console errors.</span></span>
+          <a href="Workspace.dc.html" style="font-size: 12.5px">Open preview</a>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px">
+          <div class="card" style="flex: 1 1 190px; padding: 6px; align-self: flex-start">
+            <div class="lbl" style="padding: 6px 10px">Files · 5</div>
+            <div class="file" style="background: #1C2028"><span>module.html</span><span style="color: #4FD1B5">+188</span></div>
+            <div class="file"><span>module.css</span><span style="color: #4FD1B5">+242</span></div>
+            <div class="file"><span>fields.json</span><span style="color: #4FD1B5">+131</span></div>
+            <div class="file"><span>meta.json</span><span style="color: #4FD1B5">+14</span></div>
+            <div class="file"><span>README.md</span><span style="color: #4FD1B5">+37</span></div>
+          </div>
+          <div class="card" style="flex: 999 1 360px; min-width: 0; overflow: hidden">
+            <div class="mono" style="padding: 9px 12px; border-bottom: 1px solid #22262D; font-size: 12px; display: flex; justify-content: space-between; gap: 8px"><span>pricing-table.module/module.html</span><span class="faint">new file</span></div>
+            <div class="diff" style="padding: 6px 0">
+              <sc-for list="{{diff}}" as="d" hint-placeholder-count="11">
+                <div class="ln add"><span class="n">{{d.n}}</span>{{d.code}}</div>
+              </sc-for>
+              <div class="ln ctx"><span class="n">…</span>  ⋯ 177 more lines</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <div style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Hud" mode="workspace" active="Changes" ws="Ryscript" page="Changes" status="2 working" hint-size="100%,100%"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { sel: 0 }; }
+  renderVals() {
+    const raw = [
+      { name: 'agent/rex/t-076-pricing-table', st: 'Open · ready', sc: '#F2B544', qa: 'QA passed', qc: '#4FD1B5', task: 'T-076', who: 'Rex', when: '6m ago', add: '+612', del: '−0', action: 'Approve & merge' },
+      { name: 'agent/tomo/t-080-footer-a11y', st: 'Open · in QA', sc: '#F2B544', qa: 'QA running', qc: '#8A919C', task: 'T-080', who: 'Tomo', when: '22m ago', add: '+31', del: '−18', action: 'Merge when QA passes' },
+      { name: 'rex/auto-sc1792467675858-daily-hubspot-module-creation', st: 'Merged', sc: '#8C9BFF', qa: 'QA passed', qc: '#4FD1B5', task: 'Auto', who: 'Rex', when: 'just now', add: '+9237', del: '−0', action: 'Revert merge' },
+      { name: 'rex/t-075-fix-code-block-module-caption', st: 'Merged', sc: '#8C9BFF', qa: 'QA passed', qc: '#4FD1B5', task: 'T-075', who: 'Rex', when: '2 days ago', add: '+47', del: '−2', action: 'Revert merge' }
+    ];
+    const sel = this.state.sel;
+    const brs = raw.map((b, ix) => Object.assign({}, b, { on: ix === sel ? 'true' : 'false', ring: ix === sel ? '#8C9BFF' : '#272C34', pick: () => this.setState({ sel: ix }) }));
+    const o = '{' + '{', c = '}' + '}';
+    const code = [
+      '+ {# Pricing table · T-076 #}',
+      '+ <section class="pt" aria-label="' + o + ' module.heading ' + c + '">',
+      '+   <h2 class="pt__title">' + o + ' module.heading ' + c + '</h2>',
+      '+   <div class="pt__toggle" role="group">',
+      '+     <button aria-pressed="true">Monthly</button>',
+      '+     <button aria-pressed="false">Yearly</button>',
+      '+   </div>',
+      '+   {% for tier in module.tiers %}',
+      '+     <article class="pt__tier{% if tier.featured %} is-featured{% endif %}">',
+      '+       <h3>' + o + ' tier.name ' + c + '</h3>',
+      '+       <p class="pt__price">' + o + ' tier.price_monthly ' + c + '</p>'
+    ];
+    return { brs, cur: raw[sel], diff: code.map((x, i) => ({ n: String(i + 1), code: x })) };
+  }
+}
+</script>
+</body>
+</html>
