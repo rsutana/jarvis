@@ -110,7 +110,7 @@ export function snapshot(): Snapshot {
     changes: d.changes,
     approvals: d.approvals,
     integrations: d.integrations,
-    accounts: d.accounts,
+    accounts: d.accounts.map(({ keyEnc: _k, ...a }) => a), // keys never leave the main process
     limitPolicy: d.limitPolicy,
     automations: d.automations,
     skills: d.skills,

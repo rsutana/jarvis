@@ -10,7 +10,8 @@ import * as changes from './services/changes'
 import * as orchestrator from './services/orchestrator'
 import * as jarvis from './services/jarvis'
 import * as automations from './services/automations'
-import { moveBack } from './services/accounts'
+import { moveBack, publicAccount, refreshPlans, setApiKey, verifyKey } from './services/accounts'
+import { toast } from './services/bus'
 import { checkClaude } from './services/claude'
 
 type Handlers = { [K in keyof IpcInvoke]: (...args: Parameters<IpcInvoke[K]>) => ReturnType<IpcInvoke[K]> | Promise<ReturnType<IpcInvoke[K]>> }
@@ -306,21 +307,41 @@ const handlers: Handlers = {
     return rec
   },
 
-  'account:list': () => db().accounts,
+  'account:list': () => db().accounts.map(publicAccount),
   'account:setLimitPolicy': (p) => {
     db().limitPolicy = { ...db().limitPolicy, ...obj(p, 'policy') }
     commit('limitPolicy')
   },
-  'account:save': (a) => {
+  'account:save': async (input) => {
+    const { apiKey, keyEnc: _ignored, hasKey: _h, keyHint: _kh, ...a } = obj<StoredAccount & { apiKey?: string }>(input, 'account')
     const list = db().accounts
     const k = list.findIndex((x) => x.id === a.id)
+    const prev = k >= 0 ? list[k] : undefined
     const rec: StoredAccount = { ...a, windowTokens: a.windowTokens ?? 0, budgetTokens: a.budgetTokens || 2_000_000, id: a.id || uid('acct-') }
+    // the renderer never has the key, so carry the saved one over
+    if (rec.auth === 'api_key' && prev?.keyEnc) Object.assign(rec, { keyEnc: prev.keyEnc, hasKey: prev.hasKey, keyHint: prev.keyHint })
+    const key = typeof apiKey === 'string' ? apiKey.trim() : ''
+    if (rec.auth === 'api_key' && key) {
+      const check = await verifyKey(rec.provider, key)
+      if (check === 'rejected') throw new Error(`${rec.provider === 'anthropic' ? 'Anthropic' : 'OpenAI'} rejected this API key. Check it and try again.`)
+      setApiKey(rec, key)
+      if (check === 'unknown') toast(`Saved ${rec.name}, but could not reach ${rec.provider === 'anthropic' ? 'Anthropic' : 'OpenAI'} to check the key.`)
+    }
     if (k >= 0) list[k] = rec
     else list.push(rec)
     commit('accounts')
-    return rec
+    return publicAccount(rec)
+  },
+  'account:delete': (id) => {
+    const a = db().accounts.find((x) => x.id === str(id, 'id'))
+    if (!a) return
+    const users = [db().jarvis.accountId === a.id ? 'Jarvis' : '', ...db().agents.filter((x) => x.accountId === a.id).map((x) => x.name)].filter(Boolean)
+    if (users.length) throw new Error(`${a.name} is used by ${users.join(', ')}. Move them to another account first.`)
+    db().accounts = db().accounts.filter((x) => x.id !== a.id)
+    commit('accounts')
   },
   'account:moveBack': () => moveBack(),
+  'account:refreshUsage': () => refreshPlans(),
   'account:pauseAll': () => {
     runner.stopAll()
     for (const w of db().workspaces) orchestrator.setPaused(w.id, true)

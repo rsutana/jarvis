@@ -69,6 +69,7 @@ export function until(iso?: string): string {
   if (s <= 0) return 'resetting'
   const h = Math.floor(s / 3600)
   const m = Math.round((s % 3600) / 60)
+  if (h >= 48) return `resets in ${Math.round(h / 24)}d` // weekly windows
   return h ? `resets in ${h}h ${m}m` : `resets in ${m}m`
 }
 

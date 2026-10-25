@@ -5,7 +5,7 @@ import { registerIpc } from './ipc'
 import { recoverInterrupted, stopAll } from './services/runner'
 import { scheduleAll } from './services/automations'
 import { schedule } from './services/orchestrator'
-import { tickAccounts } from './services/accounts'
+import { refreshPlans, tickAccounts } from './services/accounts'
 
 const dir = import.meta.dirname
 // WSL, VMs and remote desktops often have blocklisted GPUs; the iso scene is light enough for software GL
@@ -67,6 +67,10 @@ app.whenReady().then(async () => {
   createWindow()
   createTray()
   setInterval(tickAccounts, 60_000)
+  // real plan usage (same numbers as Claude Code's /usage) on start and every 3 minutes
+  const plans = () => refreshPlans(true).catch(() => undefined)
+  plans()
+  setInterval(plans, 180_000)
   setTimeout(schedule, 2000)
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

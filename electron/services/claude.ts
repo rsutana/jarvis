@@ -8,6 +8,7 @@ import { join } from 'node:path'
 import type { ClaudeCheck, StoredAccount } from '@shared/app-types'
 import { MODELS } from '@shared/app-types'
 import { db } from './db'
+import { apiKeyOf } from './accounts'
 
 export interface ClaudeOptions {
   prompt: string
@@ -52,8 +53,15 @@ function envFor(account?: StoredAccount): NodeJS.ProcessEnv {
   // common install location that GUI-launched apps often miss on PATH
   const local = join(homedir(), '.local', 'bin')
   if (!env.PATH?.includes(local)) env.PATH = `${local}${process.platform === 'win32' ? ';' : ':'}${env.PATH ?? ''}`
-  const dir = (account as StoredAccount & { configDir?: string } | undefined)?.configDir
-  if (dir) env.CLAUDE_CONFIG_DIR = dir
+  if (account?.auth === 'api_key') {
+    const key = apiKeyOf(account)
+    if (!key) throw new Error(`${account.name} has no API key yet. Add it in AI Accounts.`)
+    env.ANTHROPIC_API_KEY = key
+  } else if (account) {
+    // a sign-in account must use its login, not a key that happens to be in the app's environment
+    delete env.ANTHROPIC_API_KEY
+    if (account.configDir) env.CLAUDE_CONFIG_DIR = account.configDir
+  }
   return env
 }
 

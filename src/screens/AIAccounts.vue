@@ -1,20 +1,29 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import type { LimitPolicy } from '@shared/types'
-import { MODELS, type StoredAccount } from '@shared/app-types'
+import { MODELS, isConnected, type PlanWindow, type StoredAccount } from '@shared/app-types'
 import DrawerPanel from '@/shell/DrawerPanel.vue'
 import Avatar from '@/components/Avatar.vue'
 import Toggle from '@/components/Toggle.vue'
 import { useData } from '@/stores/data'
 import { useUi } from '@/stores/ui'
 import { invoke } from '@/lib/ipc'
-import { timeShort, until } from '@/components/status'
+import { ago, timeShort, until } from '@/components/status'
 
 const route = useRoute()
 const data = useData()
 const ui = useUi()
-const accounts = computed(() => data.snap?.accounts ?? [])
+const all = computed(() => data.snap?.accounts ?? [])
+const accounts = computed(() => all.value.filter(isConnected))
+const offline = computed(() => all.value.filter((a) => !isConnected(a)))
+const whyOffline = (a: StoredAccount) => (a.auth === 'api_key' ? 'No API key yet' : 'Codex runner not available yet')
+const planRows = (a: StoredAccount): [string, PlanWindow][] => {
+  const rows: [string, PlanWindow | undefined][] = [['Session (5h)', a.plan?.session], ['Weekly (7 day)', a.plan?.weekly]]
+  return rows.filter((r): r is [string, PlanWindow] => !!r[1])
+}
+// ask Anthropic for fresh plan numbers whenever the screen opens (main throttles repeats)
+onMounted(() => invoke('account:refreshUsage').catch(() => undefined))
 const policy = computed(() => data.snap!.limitPolicy)
 const jarvis = computed(() => data.snap!.jarvis)
 const setPolicy = (p: Partial<LimitPolicy>) => ui.act(() => invoke('account:setLimitPolicy', { ...policy.value, ...p }))
@@ -32,14 +41,35 @@ const tone = (p: number) => (p >= policy.value.stopAt ? 'bg-status-blocked text-
 const AUTH: Record<StoredAccount['auth'], string> = { claude_code: 'Claude Code sign-in', codex: 'Codex sign-in', api_key: 'API key' }
 const WIN: Record<StoredAccount['window'], string> = { '5h': '5-hour window', weekly: 'Weekly', monthly: 'Monthly' }
 
-// add / edit account
-const editing = ref<(StoredAccount & { configDir?: string }) | null>(null)
-const blank = (): StoredAccount & { configDir?: string } => ({ id: '', name: '', provider: 'anthropic', auth: 'claude_code', window: '5h', usagePct: 0, budgetTokens: 2_000_000, windowTokens: 0, configDir: '' })
+// add / edit account; apiKey is write-only (the saved key never comes back, only keyHint)
+type Draft = StoredAccount & { apiKey?: string }
+const editing = ref<Draft | null>(null)
+const blank = (): Draft => ({ id: '', name: '', provider: 'anthropic', auth: 'claude_code', window: '5h', usagePct: 0, budgetTokens: 2_000_000, windowTokens: 0, configDir: '', apiKey: '' })
+const edit = (a: StoredAccount) => (editing.value = { ...a, apiKey: '' })
+const saving = ref(false)
 async function saveAccount(): Promise<void> {
   const a = editing.value
-  if (!a?.name.trim()) return
-  if (await ui.act(() => invoke('account:save', a), 'Account saved')) editing.value = null
+  if (!a?.name.trim()) return ui.toast('Give the account a name', 'bad')
+  if (a.auth === 'api_key' && !a.hasKey && !a.apiKey?.trim()) return ui.toast('Paste the API key', 'bad')
+  saving.value = true
+  const ok = await ui.act(() => invoke('account:save', a), a.apiKey?.trim() ? 'API key saved' : 'Account saved')
+  saving.value = false
+  if (ok) editing.value = null
 }
+const removing = ref<string | null>(null)
+async function remove(a: StoredAccount): Promise<boolean> {
+  if (removing.value !== a.id) {
+    removing.value = a.id // first click asks, second removes
+    return false
+  }
+  removing.value = null
+  return !!(await ui.act(() => invoke('account:delete', a.id), `${a.name} removed`))
+}
+async function removeEditing(): Promise<void> {
+  if (editing.value && (await remove(editing.value))) editing.value = null
+}
+/** Connected accounts, plus the current pick so a select never shows blank. */
+const choices = (current?: string) => [...accounts.value, ...offline.value.filter((a) => a.id === current)]
 
 // usage chart: last 7 days, stacked by workspace (+ Jarvis); colour follows the entity
 const ROOF: Record<string, string> = { teal: '#34B394', blue: '#4A7FE0', clay: '#D7655A', purple: '#8A6FE0', amber: '#E0A33A' }
@@ -85,7 +115,28 @@ watch(() => route.name, (n) => n === 'usage' && setTimeout(() => usageBox.value?
         <div><label class="field-label" for="ab">Tokens per window (= 100%)</label><input id="ab" v-model.number="editing.budgetTokens" type="number" min="1000" step="100000" class="field" /></div>
         <div v-if="editing.auth === 'claude_code'"><label class="field-label" for="ad">Claude config folder (optional)</label><input id="ad" v-model="editing.configDir" class="field mono text-small" placeholder="~/.claude-work" /></div>
         <p v-if="editing.auth === 'claude_code'" class="col-span-2 m-0 text-xs text-ink-faint">Each folder holds its own Claude Code login (CLAUDE_CONFIG_DIR). Leave empty to use your default sign-in.</p>
-        <div class="col-span-2 flex justify-end gap-2"><button class="btn btn-ghost" type="button" @click="editing = null">Cancel</button><button class="btn btn-pri" type="submit">Save</button></div>
+        <div v-if="editing.auth === 'api_key'" class="col-span-2">
+          <label class="field-label" for="ak">API key</label>
+          <input
+            id="ak"
+            v-model="editing.apiKey"
+            type="password"
+            autocomplete="off"
+            spellcheck="false"
+            class="field mono text-small"
+            :placeholder="editing.hasKey ? `Saved (${editing.keyHint}) · paste a new key to replace it` : editing.provider === 'anthropic' ? 'sk-ant-…' : 'sk-…'"
+          />
+          <p class="m-0 mt-1.5 text-xs text-ink-faint">
+            Create one at <span class="mono">{{ editing.provider === 'anthropic' ? 'console.anthropic.com → API keys' : 'platform.openai.com → API keys' }}</span>.
+            Jarvis checks it with {{ editing.provider === 'anthropic' ? 'Anthropic' : 'OpenAI' }}, encrypts it with your system keychain, and never shows it again.
+            <template v-if="editing.provider === 'openai'"> Agents can't run on OpenAI models until the Codex runner ships.</template>
+          </p>
+        </div>
+        <div class="col-span-2 flex justify-end gap-2">
+          <button v-if="editing.id" class="btn btn-ghost mr-auto" type="button" @click="removeEditing">{{ removing === editing.id ? 'Click again to remove' : 'Remove account' }}</button>
+          <button class="btn btn-ghost" type="button" @click="editing = null">Cancel</button>
+          <button class="btn btn-pri" type="submit" :disabled="saving">{{ saving ? (editing.apiKey ? 'Checking key…' : 'Saving…') : 'Save' }}</button>
+        </div>
       </form>
 
       <div class="card flex flex-col gap-3 border-status-working/40 px-4 py-3.5">
@@ -114,24 +165,49 @@ watch(() => route.name, (n) => n === 'usage' && setTimeout(() => usageBox.value?
         <div v-for="a in accounts" :key="a.id" class="card flex flex-col gap-2 px-3.5 py-3">
           <div class="flex items-center gap-2.5">
             <span class="inline-flex size-7 items-center justify-center rounded-control bg-raised text-xs font-bold">{{ a.auth === 'api_key' ? 'K' : a.provider === 'anthropic' ? 'A' : 'O' }}</span>
-            <div class="min-w-0 flex-1"><div class="text-[13.5px] font-semibold">{{ a.name }}</div><div class="text-xs text-ink-faint">{{ AUTH[a.auth] }} · {{ usedBy(a.id) }}</div></div>
+            <div class="min-w-0 flex-1"><div class="text-[13.5px] font-semibold">{{ a.name }}</div><div class="text-xs text-ink-faint">{{ AUTH[a.auth] }}<span v-if="a.keyHint" class="mono"> · {{ a.keyHint }}</span> · {{ usedBy(a.id) }}</div></div>
             <b class="text-sm" :class="tone(a.usagePct).split(' ')[1]">{{ a.usagePct }}%</b>
-            <button class="btn btn-sm btn-ghost" type="button" @click="editing = { ...a }">Edit</button>
+            <button class="btn btn-sm btn-ghost" type="button" @click="edit(a)">Edit</button>
           </div>
-          <div class="relative h-2 rounded bg-line" role="meter" :aria-valuenow="a.usagePct" aria-valuemin="0" aria-valuemax="100" :aria-label="`${a.name} usage`">
-            <div class="h-2 rounded" :class="tone(a.usagePct).split(' ')[0]" :style="{ width: Math.min(100, a.usagePct) + '%' }" />
-            <span class="absolute -top-[3px] h-3.5 w-0.5 bg-status-review" :style="{ left: policy.warnAt + '%' }" aria-hidden="true" />
-            <span class="absolute -top-[3px] h-3.5 w-0.5 bg-status-blocked" :style="{ left: policy.stopAt + '%' }" aria-hidden="true" />
-          </div>
-          <div class="text-xs text-ink-faint">{{ WIN[a.window] }} · {{ a.window === '5h' ? until(a.resetAt) : a.window === 'weekly' ? 'resets weekly' : 'month to date' }} · {{ fmt(a.windowTokens) }} / {{ fmt(a.budgetTokens) }} tokens</div>
+          <template v-if="a.plan">
+            <!-- real subscription limits, same as Claude Code's /usage and the IDE panel -->
+            <div v-for="[label, w] in planRows(a)" :key="label" class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs"><span class="text-ink-muted">{{ label }}</span><span :class="tone(w.pct).split(' ')[1]">{{ w.pct }}%</span></div>
+              <div class="relative h-2 rounded bg-line" role="meter" :aria-valuenow="w.pct" aria-valuemin="0" aria-valuemax="100" :aria-label="`${a.name} ${label} usage`">
+                <div class="h-2 rounded" :class="tone(w.pct).split(' ')[0]" :style="{ width: Math.min(100, w.pct) + '%' }" />
+                <span class="absolute -top-[3px] h-3.5 w-0.5 bg-status-review" :style="{ left: policy.warnAt + '%' }" aria-hidden="true" />
+                <span class="absolute -top-[3px] h-3.5 w-0.5 bg-status-blocked" :style="{ left: policy.stopAt + '%' }" aria-hidden="true" />
+              </div>
+              <div v-if="w.resetsAt" class="text-xs text-ink-faint">{{ until(w.resetsAt) }}</div>
+            </div>
+            <div class="text-xs text-ink-faint">From Anthropic · updated {{ ago(a.plan.at) }} · includes use outside Jarvis</div>
+          </template>
+          <template v-else>
+            <div class="relative h-2 rounded bg-line" role="meter" :aria-valuenow="a.usagePct" aria-valuemin="0" aria-valuemax="100" :aria-label="`${a.name} usage`">
+              <div class="h-2 rounded" :class="tone(a.usagePct).split(' ')[0]" :style="{ width: Math.min(100, a.usagePct) + '%' }" />
+              <span class="absolute -top-[3px] h-3.5 w-0.5 bg-status-review" :style="{ left: policy.warnAt + '%' }" aria-hidden="true" />
+              <span class="absolute -top-[3px] h-3.5 w-0.5 bg-status-blocked" :style="{ left: policy.stopAt + '%' }" aria-hidden="true" />
+            </div>
+            <div class="text-xs text-ink-faint">{{ WIN[a.window] }} · {{ a.window === '5h' ? until(a.resetAt) : a.window === 'weekly' ? 'resets weekly' : 'month to date' }} · {{ fmt(a.windowTokens) }} / {{ fmt(a.budgetTokens) }} tokens · estimated from Jarvis's own runs</div>
+          </template>
         </div>
+        <p v-if="!accounts.length" class="m-0 rounded-row border border-dashed border-line-strong p-4 text-center text-small text-ink-faint">No connected accounts yet. Add a Claude Code sign-in or an API key.</p>
+        <details v-if="offline.length" class="card px-3.5 py-2.5">
+          <summary class="cursor-pointer text-[13px] text-ink-muted">Not connected · {{ offline.length }}</summary>
+          <div v-for="a in offline" :key="a.id" class="mt-2 flex items-center gap-2.5 border-t border-line-soft pt-2">
+            <span class="inline-flex size-7 items-center justify-center rounded-control bg-raised text-xs font-bold text-ink-faint">{{ a.auth === 'api_key' ? 'K' : a.provider === 'anthropic' ? 'A' : 'O' }}</span>
+            <div class="min-w-0 flex-1"><div class="text-[13.5px] font-medium">{{ a.name }}</div><div class="text-xs text-ink-faint">{{ AUTH[a.auth] }} · {{ whyOffline(a) }} · {{ usedBy(a.id) }}</div></div>
+            <button v-if="a.auth === 'api_key'" class="btn btn-sm" type="button" @click="edit(a)">Add key</button>
+            <button class="btn btn-sm btn-ghost" type="button" @click="remove(a)">{{ removing === a.id ? 'Click again to remove' : 'Remove' }}</button>
+          </div>
+        </details>
       </div>
 
       <div class="card flex flex-col gap-3 px-4 py-3.5">
         <div><div class="font-semibold">Jarvis's brain</div><div class="text-small text-ink-faint">Who answers Jarvis and plans your tasks.</div></div>
         <div class="grid grid-cols-3 gap-2.5">
           <div><label class="field-label !text-xs" for="j1">Jarvis uses</label>
-            <select id="j1" class="field" :value="jarvis.accountId" @change="setJarvis({ accountId: ($event.target as HTMLSelectElement).value })"><option v-for="a in accounts" :key="a.id" :value="a.id">{{ a.name }}</option></select></div>
+            <select id="j1" class="field" :value="jarvis.accountId" @change="setJarvis({ accountId: ($event.target as HTMLSelectElement).value })"><option v-for="a in choices(jarvis.accountId)" :key="a.id" :value="a.id">{{ a.name }}{{ isConnected(a) ? '' : ' (not connected)' }}</option></select></div>
           <div><label class="field-label !text-xs" for="j2">Model</label>
             <select id="j2" class="field" :value="jarvis.model" @change="setJarvis({ model: ($event.target as HTMLSelectElement).value })"><option v-for="m in MODELS" :key="m.name" :value="m.name">{{ m.name }}</option></select></div>
           <div><label class="field-label !text-xs" for="j3">Thinking</label>

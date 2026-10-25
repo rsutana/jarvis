@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Agent, Orchestrator, Repo, RepoStatus, Workspace } from '@shared/types'
-import { MODELS } from '@shared/app-types'
+import { MODELS, isConnected } from '@shared/app-types'
 import DrawerPanel from '@/shell/DrawerPanel.vue'
 import Avatar from '@/components/Avatar.vue'
 import { useData } from '@/stores/data'
@@ -20,7 +20,7 @@ const orch = computed(() => data.orchestratorOf(editId.value) as Orchestrator | 
 const step = ref(0)
 const names = ['Basics', 'Folder & Git', 'Orchestrator', 'Team']
 const COLORS: [Workspace['color'], string, string][] = [['clay', 'Clay', '#D7655A'], ['blue', 'Blue', '#4A7FE0'], ['teal', 'Green', '#34B394'], ['purple', 'Purple', '#8A6FE0'], ['amber', 'Amber', '#E0A33A']]
-const anthropic = computed(() => data.snap?.accounts.find((a) => a.provider === 'anthropic')?.id ?? '')
+const anthropic = computed(() => data.snap?.accounts.find((a) => a.provider === 'anthropic' && isConnected(a))?.id ?? '')
 
 const f = reactive({
   name: '', goal: '', color: 'clay' as Workspace['color'], folderPath: '',
@@ -176,7 +176,7 @@ async function finish(): Promise<void> {
         <p class="m-0 text-ink-muted">The orchestrator turns Jarvis's missions into tasks and assigns them to agents. It gets the head desk in the office.</p>
         <div class="grid grid-cols-2 gap-3.5">
           <div><label class="field-label" for="on">Name</label><input id="on" v-model="f.oName" class="field" placeholder="e.g. Alma" /></div>
-          <div><label class="field-label" for="oa">AI account</label><select id="oa" v-model="f.oAccount" class="field"><option v-for="a in data.snap?.accounts" :key="a.id" :value="a.id">{{ a.name }} · {{ a.provider === 'anthropic' ? 'Anthropic' : 'OpenAI' }}</option></select></div>
+          <div><label class="field-label" for="oa">AI account</label><select id="oa" v-model="f.oAccount" class="field"><option v-for="a in data.snap?.accounts.filter((x) => isConnected(x) || x.id === f.oAccount)" :key="a.id" :value="a.id">{{ a.name }} · {{ a.provider === 'anthropic' ? 'Anthropic' : 'OpenAI' }}{{ isConnected(a) ? '' : ' (not connected)' }}</option></select></div>
           <div><label class="field-label" for="om">Model</label><select id="om" v-model="f.oModel" class="field"><option v-for="m in MODELS.filter((x) => x.provider === 'anthropic')" :key="m.name">{{ m.name }}</option></select></div>
           <div><label class="field-label" for="ot">Thinking</label><select id="ot" v-model="f.oThinking" class="field"><option value="medium">Medium</option><option value="high">High</option><option value="default">Default</option></select></div>
         </div>

@@ -74,7 +74,25 @@ export type StoredAccount = AIAccount & {
   budgetTokens: number // tokens that count as 100% of one window
   windowStart?: ISODate
   windowTokens: number
+  configDir?: string // claude_code: CLAUDE_CONFIG_DIR holding this account's login
+  hasKey?: boolean // api_key: a key is saved
+  keyHint?: string // api_key: e.g. "sk-ant-…AbCd", safe to show
+  keyEnc?: string // api_key: OS-encrypted key; main process only, stripped before it reaches the renderer
+  plan?: PlanUsage // claude_code: real subscription limits from Anthropic (what /usage and the IDE show)
 }
+
+export interface PlanWindow {
+  pct: number
+  resetsAt?: ISODate
+}
+export interface PlanUsage {
+  session?: PlanWindow // 5-hour window
+  weekly?: PlanWindow // 7-day window
+  at: ISODate // when Anthropic was asked
+}
+
+/** Usable right now: API-key accounts need a saved key; Codex sign-in has no runner yet. */
+export const isConnected = (a: StoredAccount): boolean => (a.auth === 'api_key' ? !!a.hasKey : a.auth === 'claude_code')
 export type AnyAgent = Agent | Orchestrator
 
 export interface AppSettings {
@@ -150,7 +168,9 @@ declare module './types' {
     'change:diff': (workspaceId: Id, branch: string) => FileDiff[]
     'change:requestQa': (workspaceId: Id, branch: string) => void
     'change:requestChanges': (workspaceId: Id, branch: string, note: string) => void
-    'account:save': (a: StoredAccount) => StoredAccount
+    'account:save': (a: StoredAccount & { apiKey?: string }) => StoredAccount // apiKey is write-only
+    'account:delete': (id: Id) => void
+    'account:refreshUsage': () => void // re-read real plan usage from Anthropic (throttled)
     'account:moveBack': () => void
     'account:pauseAll': () => void
     'integration:save': (i: Integration) => Integration

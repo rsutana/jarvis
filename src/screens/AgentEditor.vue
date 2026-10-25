@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Agent, Policy } from '@shared/types'
-import { MODELS, type AnyAgent } from '@shared/app-types'
+import { MODELS, isConnected, type AnyAgent } from '@shared/app-types'
 import DrawerPanel from '@/shell/DrawerPanel.vue'
 import Avatar from '@/components/Avatar.vue'
 import StatusChip from '@/components/StatusChip.vue'
@@ -23,7 +23,7 @@ const list = computed(() => (wsId.value ? data.agents.filter((a) => a.workspaceI
 const LOOKS: [string, string][] = [['Periwinkle', '#8C9BFF'], ['Teal', '#4FD1B5'], ['Sky', '#7FB2FF'], ['Cyan', '#6FD3E8'], ['Amber', '#F2B544'], ['Coral', '#FF8A7A'], ['Pink', '#FFB3D1'], ['Lime', '#9FE07A'], ['Violet', '#B9A2FF'], ['Sand', '#E8C99A']]
 const blank = (): Omit<Agent, 'id'> => ({
   name: '', role: '', kind: 'agent', pronouns: 'they/them', look: { color: '#8C9BFF', hair: '#2B2420', skin: '#D6A27E', glasses: false },
-  accountId: data.snap?.accounts.find((a) => a.provider === 'anthropic')?.id ?? '', model: 'Sonnet 5.5', thinking: 'default', pinnedToAccount: false,
+  accountId: data.snap?.accounts.find((a) => a.provider === 'anthropic' && isConnected(a))?.id ?? '', model: 'Sonnet 5.5', thinking: 'default', pinnedToAccount: false,
   instructions: '', skillIds: [], integrations: [], guardrails: { fileAccess: 'read_write', maxRunMinutes: 30 }, workspaceId: wsId.value, status: 'idle'
 })
 const draft = ref<AnyAgent | (Omit<Agent, 'id'> & { id?: string }) | null>(null)
@@ -116,7 +116,7 @@ const ws = computed(() => data.workspace(draft.value?.workspaceId))
         </div>
         <div class="flex flex-col gap-3 border-b border-line-soft px-5 py-4">
           <div class="grid grid-cols-[120px_minmax(0,1fr)] items-center gap-3.5"><label for="b1" class="text-[13px] text-ink-muted">AI account</label>
-            <select id="b1" v-model="draft.accountId" class="field"><option v-for="a in data.snap?.accounts" :key="a.id" :value="a.id">{{ a.name }} · {{ a.provider === 'anthropic' ? 'Anthropic' : 'OpenAI' }}</option></select></div>
+            <select id="b1" v-model="draft.accountId" class="field"><option v-for="a in data.snap?.accounts.filter((x) => isConnected(x) || x.id === draft!.accountId)" :key="a.id" :value="a.id">{{ a.name }} · {{ a.provider === 'anthropic' ? 'Anthropic' : 'OpenAI' }}{{ isConnected(a) ? '' : ' (not connected)' }}</option></select></div>
           <div class="grid grid-cols-[120px_minmax(0,1fr)] items-center gap-3.5"><label for="b2" class="text-[13px] text-ink-muted">Model</label>
             <select id="b2" v-model="draft.model" class="field"><option v-for="m in MODELS" :key="m.name" :value="m.name">{{ m.name }}{{ m.provider === 'openai' ? ' (Codex runner, coming soon)' : '' }}</option></select></div>
           <div class="grid grid-cols-[120px_minmax(0,1fr)] items-center gap-3.5"><label for="b3" class="text-[13px] text-ink-muted">Thinking</label>
