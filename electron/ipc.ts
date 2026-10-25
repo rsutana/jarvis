@@ -11,6 +11,7 @@ import * as orchestrator from './services/orchestrator'
 import * as jarvis from './services/jarvis'
 import * as automations from './services/automations'
 import * as skills from './services/skills'
+import * as mcp from './services/mcp'
 import { moveBack, publicAccount, refreshPlans, setApiKey, verifyKey } from './services/accounts'
 import { toast } from './services/bus'
 import { checkClaude } from './services/claude'
@@ -293,7 +294,7 @@ const handlers: Handlers = {
   'approval:decide': (id, decision, note, always) => approvals.decide(str(id, 'id'), decision === 'reject' ? 'reject' : 'approve', note, always),
   'approval:update': (id, body) => approvals.updateBody(str(id, 'id'), String(body ?? '')),
 
-  'integration:list': () => db().integrations,
+  'integration:list': () => db().integrations.map(mcp.publicIntegration),
   'integration:setPolicy': (id, tool, policy) => {
     const i = db().integrations.find((x) => x.id === id)
     const t = i?.tools.find((x) => x.name === tool)
@@ -304,12 +305,28 @@ const handlers: Handlers = {
   'integration:save': (i) => {
     const list = db().integrations
     const k = list.findIndex((x) => x.id === i.id)
-    const rec = { ...i, id: i.id || uid('in-') }
+    const prev = k >= 0 ? list[k] : undefined
+    const { mcpSecret: _ignored, ...rest } = i
+    // the renderer never holds the secret, and connection settings only change through mcp:configure
+    const rec = { ...rest, id: i.id || uid('in-'), mcpSecret: prev?.mcpSecret, mcp: prev ? prev.mcp : i.mcp }
     if (k >= 0) list[k] = rec
     else list.push(rec)
     commit('integrations')
-    return rec
+    return mcp.publicIntegration(rec)
   },
+  'integration:delete': (id) => {
+    const i = db().integrations.find((x) => x.id === str(id, 'id'))
+    if (!i) return
+    if (i.id === 'web-search') throw new Error('Web search is built in. Turn it off for individual agents instead.')
+    const autos = db().automations.filter((a) => a.trigger.type === 'email' && a.trigger.integrationId === i.id)
+    if (autos.length) throw new Error(`${i.name} triggers ${autos.map((a) => `"${a.name}"`).join(', ')}. Change or delete ${autos.length === 1 ? 'that automation' : 'those automations'} first.`)
+    for (const a of db().agents) a.integrations = a.integrations.filter((l) => l.integrationId !== i.id)
+    db().integrations = db().integrations.filter((x) => x.id !== i.id) // its encrypted MCP credentials go with it
+    commit('integrations', 'agents')
+  },
+  'mcp:configure': (id, cfg, secrets) => mcp.configureMcp(str(id, 'id'), obj(cfg, 'config'), secrets && typeof secrets === 'object' ? secrets : {}),
+  'mcp:connect': (id) => mcp.connectMcp(str(id, 'id')),
+  'mcp:signOut': (id) => mcp.signOutMcp(str(id, 'id')),
 
   'account:list': () => db().accounts.map(publicAccount),
   'account:setLimitPolicy': (p) => {

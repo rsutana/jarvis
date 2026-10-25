@@ -173,10 +173,28 @@ export interface Integration {
   id: Id;
   name: string;             // "Cyfervoid.Com"
   type: 'mcp' | 'http' | 'gmail' | 'slack' | 'github' | 'hubspot';
-  tools: { name: string; description: string; policy: Policy }[];
+  tools: { name: string; description: string; policy: Policy }[]; // custom MCP: discovered on connect
   agentIds: Id[];
   workspaceScope: Id[] | 'all';
   status: 'connected' | 'error' | 'disconnected';
+  mcp?: McpConfig;          // a third-party MCP server you connect yourself
+  mcpSecret?: string;       // main process only: OS-encrypted header values, client secret and OAuth tokens
+}
+
+/** How to reach a third-party MCP server. Secret values never leave the main process. */
+export interface McpConfig {
+  transport: 'http' | 'sse' | 'stdio'; // Streamable HTTP, SSE (legacy), local command
+  url?: string;             // http / sse
+  command?: string;         // stdio
+  args?: string[];
+  headers?: { name: string; set: boolean }[]; // values are write-only
+  oauth: 'none' | 'dcr' | 'client'; // none · auto-register (dynamic client registration) · bring your own client
+  clientId?: string;        // oauth 'client'
+  hasClientSecret?: boolean;
+  signedIn?: boolean;       // OAuth tokens saved
+  server?: { name: string; version?: string }; // reported on the last successful connect
+  testedAt?: ISODate;
+  error?: string;           // last connect failure
 }
 
 export interface AIAccount {

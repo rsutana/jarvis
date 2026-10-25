@@ -109,7 +109,7 @@ export function snapshot(): Snapshot {
     runs: d.runs.map(({ events, ...r }) => ({ ...r, events: events.slice(-200) })),
     changes: d.changes,
     approvals: d.approvals,
-    integrations: d.integrations,
+    integrations: d.integrations.map(({ mcpSecret: _s, ...i }) => i), // MCP credentials never leave the main process
     accounts: d.accounts.map(({ keyEnc: _k, ...a }) => a), // keys never leave the main process
     limitPolicy: d.limitPolicy,
     automations: d.automations,

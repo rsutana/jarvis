@@ -192,6 +192,7 @@ declare module './types' {
     'account:moveBack': () => void
     'account:pauseAll': () => void
     'integration:save': (i: Integration) => Integration
+    'integration:delete': (id: Id) => void // also unlinks it from agents; refused while an automation triggers on it
     'automation:delete': (id: Id) => void
     'approval:update': (id: Id, body: string) => void
     'skill:save': (s: Skill) => Skill
@@ -200,6 +201,11 @@ declare module './types' {
     'skill:read': (id: Id) => string // a shared skill's SKILL.md
     'skill:install': (input: string, skill: string | undefined, storePath: string) => string // runs `npx skills add`
     'skill:setDirs': (dirs: string[]) => SkillStore[]
+    /** Save a custom MCP's connection settings; secret values replace saved ones only when given. */
+    'mcp:configure': (id: Id, cfg: McpConfig, secrets: { headers?: Record<string, string>; clientSecret?: string }) => Integration
+    /** Connect (signing in through the browser when OAuth needs it) and discover the server's tools. */
+    'mcp:connect': (id: Id) => Integration
+    'mcp:signOut': (id: Id) => Integration
   }
   interface IpcEvents {
     /** Main changed these collections; stores refetch the snapshot slice. */
@@ -227,6 +233,10 @@ export interface NewWorkspaceInput {
 }
 
 /** Model names shown in the UI → CLI + provider. */
+/** Where MCP OAuth sign-in comes back to (a loopback listener in the main process). Register this for "bring your own client". */
+export const MCP_CALLBACK_PORT = 47823
+export const MCP_REDIRECT_URL = `http://127.0.0.1:${MCP_CALLBACK_PORT}/callback`
+
 export const MODELS: { name: string; provider: 'anthropic' | 'openai'; cli: string }[] = [
   { name: 'Opus 5.5', provider: 'anthropic', cli: 'opus' },
   { name: 'Sonnet 5.5', provider: 'anthropic', cli: 'sonnet' },
