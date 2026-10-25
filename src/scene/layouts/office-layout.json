@@ -59,15 +59,15 @@
       { "pos": [13.2, 17.46], "seat": 0.75, "faces": [13.2, 16.5] }
     ],
     "nap": [
-      { "pos": [1.55, 10.6], "seat": 0.45, "headTo": [1.55, 6.9] },
-      { "pos": [1.55, 7.0], "seat": 0.45, "headTo": [1.55, 10.7] }
+      { "pos": [1.55, 10.5], "seat": 0.5, "headTo": [1.55, 6.9] },
+      { "pos": [1.55, 7.08], "seat": 0.5, "headTo": [1.55, 10.7] }
     ]
   },
   "zones": [
     { "id": "lounge", "label": null, "bounds": [0.8, 6.6, 5.4, 10.8], "items": [
-      { "model": "rug.glb", "position": [3.1, 8.7], "size": [4.6, 4.2, 0.01], "color": "#D9A441" },
+      { "model": "rug.glb", "position": [3.1, 8.7], "size": [4.6, 4.2, 0.01], "colors": ["#D9A441", "#E6C27A"] },
       { "model": "sofa_3seat.glb", "position": [1.4, 8.8], "size": [1.45, 3.8, 0.9], "rotationY": 90, "color": "#66728A" },
-      { "model": "coffee_table.glb", "position": [3.65, 8.7], "size": [1.3, 1.6, 0.4] }
+      { "model": "coffee_table.glb", "position": [3.5, 8.8], "size": [0.95, 1.3, 0.42] }
     ] },
     { "id": "meeting-room", "label": "Meeting room", "bounds": [19, 0, 24, 5], "glassWalls": [{ "from": [19, 5], "to": [24, 5] }, { "from": [19, 0], "to": [19, 3.4] }, { "from": [19, 4.6], "to": [19, 5] }], "door": { "from": [19, 3.4], "to": [19, 4.6] }, "sign": { "text": "Meeting Room", "position": [21.5, 5.06, 1.95], "rotationY": 0 }, "items": [
       { "model": "rug.glb", "position": [21.5, 2.5], "size": [4.6, 4.6, 0.01], "color": "#3E4C66" },

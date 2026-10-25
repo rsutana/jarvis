@@ -323,6 +323,37 @@ function roundTable(parent: THREE.Object3D, x: number, z: number, d: number, h: 
   cyl(parent, x, z, d / 2 - 0.04, 0.03, h - 0.03, WOOD[0]) // top
 }
 
+/* ---------- lounge ---------- */
+
+/**
+ * Three-seat sofa with its back on the -x side, facing +x: short legs, a darker base,
+ * arms at both ends, a backrest and separate seat and back cushions. Seat top at 0.5.
+ */
+function sofa(parent: THREE.Object3D, x: number, z: number, d: number, len: number, color: string): void {
+  const [dark, light] = [shade(color, 0.78), shade(color, 1.1)]
+  const [x0, x1, z0, z1] = [x - d / 2, x + d / 2, z - len / 2, z + len / 2]
+  const ARM = 0.16
+  const BACK = 0.3
+  for (const lx of [x0 + 0.1, x1 - 0.1]) for (const lz of [z0 + 0.1, z1 - 0.1]) cyl(parent, lx, lz, 0.035, 0.08, 0, '#1E2229')
+  box(parent, x, z, d, len, 0.22, 0.08, dark) // base
+  for (const az of [z0 + ARM / 2, z1 - ARM / 2]) box(parent, x, az, d, ARM, 0.52, 0.08, color) // arms
+  box(parent, x0 + BACK / 2, z, BACK, len - 2 * ARM, 0.82, 0.08, color) // backrest
+  const n = 3
+  const cw = (len - 2 * ARM) / n
+  for (let i = 0; i < n; i++) {
+    const cz = z0 + ARM + cw * (i + 0.5)
+    box(parent, (x0 + BACK + x1) / 2, cz, x1 - x0 - BACK - 0.02, cw - 0.03, 0.2, 0.3, light) // seat cushion
+    box(parent, x0 + BACK + 0.09, cz, 0.18, cw - 0.03, 0.36, 0.5, light) // back cushion
+  }
+}
+
+/** Low dark coffee table on four legs, with a mug on it. */
+function loungeTable(parent: THREE.Object3D, x: number, z: number, w: number, d: number, h: number): void {
+  for (const lx of [-1, 1]) for (const lz of [-1, 1]) box(parent, x + lx * (w / 2 - 0.08), z + lz * (d / 2 - 0.08), 0.05, 0.05, h - 0.05, 0, '#262B33')
+  box(parent, x, z, w, d, 0.05, h - 0.05, '#2F3540')
+  mugAt(parent, x + 0.15, z - 0.2, h)
+}
+
 /* ---------- coffee counter (kitchen zone): modern café bar ---------- */
 const RED = '#D8452F'
 const STEEL = '#DADDE2'
@@ -565,16 +596,20 @@ export function buildOffice(input: OfficeInput): World {
 
   // zones
   for (const zn of layout.zones) {
-    for (const it of zn.items as { model: string; position?: number[]; positions?: number[][]; faces?: number[]; size?: number[]; rotationY?: number; color?: string; onCounter?: boolean; elevation?: number; wall?: string; from?: number; to?: number; y?: number[] }[]) {
+    for (const it of zn.items as { model: string; position?: number[]; positions?: number[][]; faces?: number[]; size?: number[]; rotationY?: number; color?: string; colors?: string[]; onCounter?: boolean; elevation?: number; wall?: string; from?: number; to?: number; y?: number[] }[]) {
       const size = it.size ?? SIZES[it.model] ?? [0.6, 0.6, 0.6]
       const ps = it.positions ?? (it.position ? [it.position] : [])
       for (const p of ps) {
         const y = it.elevation ?? (it.onCounter ? 1.0 : 0)
-        if (it.model === 'rug.glb') box(g, p[0], p[1], size[0], size[1], 0.02, 0.002, it.color ?? '#D9A441')
-        else if (it.model === 'sofa_3seat.glb') {
-          box(g, p[0], p[1], size[0], size[1], 0.45, 0, it.color ?? '#66728A')
-          box(g, p[0] - size[0] / 2 + 0.15, p[1], 0.3, size[1], 0.9, 0, shade(it.color ?? '#66728A', 0.85))
-        } else if (it.model === 'office_chair.glb') chair(g, p[0], p[1], it.rotationY)
+        if (it.model === 'rug.glb') {
+          // optional two-tone checker (lounge); otherwise one colour
+          const cs = it.colors ?? [it.color ?? '#D9A441']
+          const [tw, td] = [size[0] / 4, size[1] / 4]
+          if (cs.length < 2) box(g, p[0], p[1], size[0], size[1], 0.02, 0.002, cs[0])
+          else for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) box(g, p[0] - size[0] / 2 + tw * (i + 0.5), p[1] - size[1] / 2 + td * (j + 0.5), tw, td, 0.02, 0.002, cs[(i + j) % cs.length])
+        } else if (it.model === 'sofa_3seat.glb') sofa(g, p[0], p[1], size[0], size[1], it.color ?? '#66728A')
+        else if (it.model === 'coffee_table.glb') loungeTable(g, p[0], p[1], size[0], size[1], size[2])
+        else if (it.model === 'office_chair.glb') chair(g, p[0], p[1], it.rotationY)
         else if (it.model === 'round_table.glb') roundTable(g, p[0], p[1], size[0], size[2])
         else if (it.model === 'cafe_chair.glb') cafeChair(g, p[0], p[1], it.faces?.[0] ?? p[0], it.faces?.[1] ?? p[1] + 1, it.color ?? '#3E8A5A')
         else if (it.model === 'bar_stool.glb') woodStool(g, p[0], p[1])
@@ -589,7 +624,7 @@ export function buildOffice(input: OfficeInput): World {
         else if (it.model === 'back_cabinet.glb') backCabinet(g, p[0], p[1], size[0], size[1], size[2])
         else if (it.model === 'microwave.glb') oven(g, p[0], p[1], y)
         else if (it.model === 'planter_box.glb') planterBox(g, p[0], p[1])
-        else if (it.model === 'meeting_table.glb' || it.model === 'coffee_table.glb') box(g, p[0], p[1], size[0], size[1], size[2], 0, WOOD[0])
+        else if (it.model === 'meeting_table.glb') box(g, p[0], p[1], size[0], size[1], size[2], 0, WOOD[0])
         else box(g, p[0], p[1], size[0], size[1], size[2], y, it.color ?? '#D5DAE1')
       }
       if (it.wall && it.from !== undefined && it.to !== undefined && it.y) onWall(g, it.wall, it.from, it.to, it.y[0], it.y[1], mat('#1A1E25', { emissive: '#3B4A60', emissiveIntensity: 0.6 }))
