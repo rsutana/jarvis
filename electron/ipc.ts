@@ -376,7 +376,10 @@ const handlers: Handlers = {
   'skill:install': (input, skill, storePath) => skills.installSkill(str(input, 'source'), typeof skill === 'string' ? skill : undefined, str(storePath, 'storePath')),
   'skill:setDirs': async (dirs) => {
     if (!Array.isArray(dirs) || dirs.some((d) => typeof d !== 'string')) throw new Error('dirs must be a list of folders')
-    db().settings.skillDirs = [...new Set(dirs.map((d) => d.trim()).filter(Boolean))]
+    const list = dirs.map((d) => d.trim()).filter(Boolean)
+    const known = list.find((d) => skills.isKnownStore(d))
+    if (known) throw new Error(`${known} is already scanned automatically; it's in the list above.`)
+    db().settings.skillDirs = list.filter((d, i) => list.findIndex((x) => skills.samePath(x, d)) === i)
     commit('settings')
     await skills.scanSkills(true)
     return skills.skillStores()

@@ -7,7 +7,7 @@
 import { execFile, spawn } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { basename, dirname, join } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import type { Skill, SkillStore } from '@shared/app-types'
 import { commit, db } from './db'
 
@@ -31,6 +31,18 @@ function wslDistros(includeStopped: boolean): Promise<string[]> {
   )
 }
 
+/** Windows paths compare case-insensitively and with either slash; trailing separators don't matter. */
+const norm = (p: string): string => {
+  const s = resolve(p.trim()).replace(/[\\/]+$/, '')
+  return process.platform === 'win32' ? s.replace(/\//g, '\\').toLowerCase() : s
+}
+export const samePath = (a: string, b: string): boolean => norm(a) === norm(b)
+
+/** The folders found without any setup (this PC + running WSL homes), for telling a custom folder apart. */
+export function isKnownStore(p: string): boolean {
+  return cache.stores.some((s) => !s.custom && samePath(s.path, p))
+}
+
 /** Canonical store first in each home, so a skill linked into ~/.claude/skills resolves to its real folder. */
 async function storeDirs(includeStopped: boolean): Promise<StoreDir[]> {
   const h = homedir()
@@ -52,8 +64,9 @@ async function storeDirs(includeStopped: boolean): Promise<StoreDir[]> {
       out.push({ path: join(home, user, '.claude', 'skills'), label: `WSL ${distro} · ${user} · ~/.claude/skills`, canonical: false, wsl })
     }
   }
-  for (const p of db().settings.skillDirs ?? []) out.push({ path: p, label: p, canonical: false, custom: true })
-  return out.filter((d) => d.custom || existsSync(d.path))
+  for (const p of db().settings.skillDirs ?? []) if (!out.some((d) => samePath(d.path, p))) out.push({ path: p, label: p, canonical: false, custom: true })
+  // a canonical store is a valid install target before its first skill: `npx skills add -g` creates it
+  return out.filter((d) => d.custom || d.canonical || existsSync(d.path))
 }
 
 /** Frontmatter `name` / `description` (plain or folded `>` / `|` YAML) and the body. */
@@ -91,7 +104,9 @@ export async function scanSkills(includeStopped = false): Promise<void> {
     try {
       entries = readdirSync(d.path)
     } catch (e) {
-      stores.push({ ...d, count: 0, error: (e as NodeJS.ErrnoException).code ?? 'unreadable' })
+      const code = (e as NodeJS.ErrnoException).code
+      // a not-yet-created canonical store is empty, not broken
+      stores.push(d.canonical && code === 'ENOENT' ? { ...d, count: 0 } : { ...d, count: 0, error: code ?? 'unreadable' })
       continue
     }
     const lock = basename(d.path) === 'skills' ? readLock(d.path) : {}

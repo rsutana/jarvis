@@ -39,7 +39,14 @@ async function save(): Promise<void> {
 // shared folders: found automatically (this PC + WSL homes) plus any you add
 const stores = ref<SkillStore[]>([])
 const scanning = ref(false)
-onMounted(async () => (stores.value = await invoke('skill:stores')))
+const loadStores = async () => (stores.value = await invoke('skill:stores'))
+onMounted(async () => {
+  await loadStores()
+  // the startup scan may still be running (WSL takes a moment); scan now if nothing is known yet
+  if (!stores.value.length) stores.value = await invoke('skill:scan', false)
+})
+// every scan (startup, install, rescan) commits 'skills'; keep the folder list in step with it
+watch(() => data.snap?.skills, loadStores)
 async function rescan(): Promise<void> {
   scanning.value = true
   const s = await ui.act(() => invoke('skill:scan', true), 'Skill folders rescanned')
@@ -125,7 +132,10 @@ async function install(): Promise<void> {
         <div class="grid grid-cols-2 gap-3">
           <div><label class="field-label" for="sk">Only this skill (optional)</label><input id="sk" v-model="form.skill" class="field mono text-small" placeholder="e.g. frontend-design" /></div>
           <div><label class="field-label" for="st">Install into</label>
-            <select id="st" v-model="form.store" class="field"><option v-for="s in targets" :key="s.path" :value="s.path">{{ s.label }}</option></select></div>
+            <select id="st" v-model="form.store" class="field" :disabled="!targets.length">
+              <option v-if="!targets.length" value="">Looking for skill folders…</option>
+              <option v-for="s in targets" :key="s.path" :value="s.path">{{ s.label }}</option>
+            </select></div>
         </div>
         <p class="m-0 text-xs text-ink-faint">Runs <span class="mono">npx skills add &lt;source&gt; -g -y</span> {{ targets.find((t) => t.path === form.store)?.wsl ? 'inside WSL as you' : 'on this PC' }}, so the skill lands in the shared folder and is linked into Claude Code and your other AI tools. Needs Node.js there.</p>
         <div class="flex items-center gap-2"><div class="flex-1" /><button class="btn btn-pri" type="submit" :disabled="installing || !form.source.trim() || !form.store">{{ installing ? 'Installing…' : 'Install' }}</button></div>
