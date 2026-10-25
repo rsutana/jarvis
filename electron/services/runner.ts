@@ -113,7 +113,9 @@ function promptFor(task: StoredTask, agent: AnyAgent, branch: string, qaDiff?: s
     task.criteria.length ? 'Acceptance criteria:\n' + task.criteria.map((c) => `- ${c.text}`).join('\n') : '',
     contextFor(task),
     qaDiff ? `You are reviewing branch ${branch}. Changed files:\n${qaDiff}\nReview the change against the task. End your reply with exactly "QA: PASS" or "QA: FAIL" on its own line, followed by the reasons.` : '',
-    `You work in a git worktree on branch ${branch}. Stay inside this folder. Do not run git; the app commits your changes when you finish.`,
+    ws.repos?.length
+      ? `This folder holds the project's git repos (${ws.repos.map((r) => `${r.path}/`).join(', ')}), each a worktree on branch ${branch}. Change only the repos the task needs. Stay inside this folder. Do not run git; the app commits your changes in each repo when you finish.`
+      : `You work in a git worktree on branch ${branch}. Stay inside this folder. Do not run git; the app commits your changes when you finish.`,
     'Never send, publish, delete or spend on external services yourself. If the task needs that, finish everything else and add a final block:',
     'REQUEST: <send_email|publish|delete|spend> | <short title>',
     '<the exact content to send or publish>',
@@ -237,10 +239,10 @@ export async function startTask(taskId: string, resumeRun?: StoredRun, steerText
     return fail(task, agent, res.text.split('\n')[0].slice(0, 160), ws.id)
   }
   run.report = res.text
-  await finish(task, agent, run, cwd)
+  await finish(task, agent, run)
 }
 
-async function finish(task: StoredTask, agent: AnyAgent, run: StoredRun, cwd: string): Promise<void> {
+async function finish(task: StoredTask, agent: AnyAgent, run: StoredRun): Promise<void> {
   const ws = findWorkspace(task.workspaceId)!
   const report = run.report ?? ''
   task.progress = 1
@@ -261,17 +263,19 @@ async function finish(task: StoredTask, agent: AnyAgent, run: StoredRun, cwd: st
     if (pass && change && ws.git.mergePolicy === 'auto_with_revert') {
       await mergeBranch(ws.id, change.branch).catch((e) => toast(String(e.message ?? e), 'bad'))
     }
+    await git.pruneUntouched(ws, task.qaOf).catch(() => undefined)
     onFinished(task)
     return
   }
 
-  let sha: string | null = null
+  const multi = git.isMultiRepo(ws)
   try {
-    sha = await git.commitAll(cwd, `${task.id}: ${task.title}`)
+    for (const c of await git.commitAll(ws, run.branch, `${task.id}: ${task.title}`))
+      push(run, { t: now(), kind: 'commit', title: `Committed ${c.sha.slice(0, 7)}${multi ? ` in ${c.repo}` : ''}`, text: `${task.id}: ${task.title}` })
   } catch (e) {
     push(run, { t: now(), kind: 'message', title: 'Commit failed', text: (e as Error).message, level: 'error' })
   }
-  if (sha) push(run, { t: now(), kind: 'commit', title: `Committed ${sha.slice(0, 7)}`, text: `${task.id}: ${task.title}` })
+  await git.pruneUntouched(ws, run.branch).catch(() => undefined)
 
   const stats = await git.branchStats(ws, run.branch).catch(() => null)
   run.filesChanged = stats?.files ?? []
@@ -283,10 +287,11 @@ async function finish(task: StoredTask, agent: AnyAgent, run: StoredRun, cwd: st
       change = { workspaceId: ws.id, branch: run.branch, taskId: task.id, agentId: agent.id, commits: 0, additions: 0, deletions: 0, qa: 'pending', state: 'open', createdAt: now() }
       db().changes.push(change)
     }
-    Object.assign(change, { commits: stats.commits, additions: stats.additions, deletions: stats.deletions, qa: 'pending' })
+    Object.assign(change, { commits: stats.commits, additions: stats.additions, deletions: stats.deletions, qa: 'pending', repos: multi ? stats.repos : undefined })
     task.status = 'review'
     task.note = `Branch ready · +${stats.additions} −${stats.deletions}`
-    log(ws.id, `${agent.name} finished ${task.id}: ${stats.commits} commit(s) on ${run.branch}.`, 'good')
+    const where = multi ? ` in ${stats.repos.map((r) => r.name).join(', ')}` : ''
+    log(ws.id, `${agent.name} finished ${task.id}: ${stats.commits} commit(s) on ${run.branch}${where}.`, 'good')
   } else {
     task.status = request ? 'review' : 'done'
     task.note = request ? 'Waiting for your approval' : 'No file changes · answer in report'

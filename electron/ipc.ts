@@ -141,6 +141,7 @@ const handlers: Handlers = {
       goal: input.goal ?? '',
       color: input.color,
       folderPath: input.folderPath,
+      repos: input.repos ?? [],
       git: input.git,
       orchestratorId: orchId,
       agentIds: [],
@@ -169,11 +170,12 @@ const handlers: Handlers = {
       : await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
     return r.canceled ? null : (r.filePaths[0] ?? null)
   },
-  'workspace:gitStatus': async (idOrPath) => {
-    const ws = findWorkspace(idOrPath)
-    const folder = ws ? git.requireRepo(ws) : str(idOrPath, 'path')
-    return git.status(folder)
+  'workspace:gitStatus': async (id) => {
+    const ws = findWorkspace(str(id, 'id'))
+    if (!ws) throw new Error('Workspace not found')
+    return git.statuses(ws)
   },
+  'workspace:scanRepos': (folder, defaultBase) => git.scanRepos(str(folder, 'folder'), typeof defaultBase === 'string' && defaultBase ? defaultBase : 'main'),
 
   'agent:list': (workspaceId) => (workspaceId ? db().agents.filter((a) => a.workspaceId === workspaceId) : db().agents),
   'agent:save': (a) => upsertAgent(obj<Agent>(a, 'agent')) as Agent,

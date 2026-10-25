@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { FileDiff } from '@shared/app-types'
+import type { RepoStatus } from '@shared/types'
 import DrawerPanel from '@/shell/DrawerPanel.vue'
 import Avatar from '@/components/Avatar.vue'
 import { useData } from '@/stores/data'
@@ -23,13 +24,14 @@ watch(cur, (c) => {
   if (c && c.state !== 'open') filter.value = 'merged'
 }, { immediate: true })
 
-const git = ref<{ branch: string; clean: boolean } | null>(null)
+const git = ref<RepoStatus[] | null>(null)
 const gitErr = ref('')
 async function loadGit(): Promise<void> {
   gitErr.value = ''
   git.value = await invoke('workspace:gitStatus', id.value).catch((e: Error) => ((gitErr.value = e.message.replace(/^.*?: /, '')), null))
 }
-watch(() => [id.value, ws.value?.folderPath, data.snap?.changes.length], loadGit, { immediate: true })
+watch(() => [id.value, ws.value?.folderPath, ws.value?.repos?.length, data.snap?.changes.length], loadGit, { immediate: true })
+const baseOf = (repo: string) => ws.value?.repos?.find((r) => r.name === repo)?.baseBranch ?? ws.value?.git.baseBranch
 
 const diffs = ref<FileDiff[]>([])
 const diffErr = ref('')
@@ -85,7 +87,9 @@ const pick = (b: string) => router.replace(`/w/${id.value}/changes/${b}`)
   <DrawerPanel label="Changes" :close-to="`/w/${id}`">
     <template #header>
       <h1 class="m-0 text-title">Changes</h1>
-      <span v-if="git" class="chip mono"><span class="dot" :class="git.clean ? 'bg-status-working' : 'bg-status-review'" />{{ git.branch }} · {{ git.clean ? 'clean' : 'uncommitted changes' }}</span>
+      <template v-if="git">
+        <span v-for="r in git" :key="r.path" class="chip mono"><span class="dot" :class="r.clean ? 'bg-status-working' : 'bg-status-review'" />{{ git.length > 1 ? `${r.name}: ` : '' }}{{ r.branch }} · {{ r.clean ? 'clean' : 'uncommitted changes' }}</span>
+      </template>
       <span v-else class="chip text-status-review">{{ gitErr || 'checking git…' }}</span>
     </template>
     <div class="flex min-h-0 flex-1 flex-wrap overflow-auto">
@@ -105,6 +109,7 @@ const pick = (b: string) => router.replace(`/w/${id.value}/changes/${b}`)
         >
           <span class="mono text-xs break-all">{{ c.branch }}</span>
           <span class="flex flex-wrap items-center gap-2"><span class="chip" :class="ST(c)[1]">{{ ST(c)[0] }}</span><span class="text-xs text-ink-faint">{{ c.taskId ?? 'Auto' }} · {{ data.nameOf(c.agentId) }}</span></span>
+          <span v-if="c.repos?.length" class="mono text-xs text-ink-faint">{{ c.repos.map((r) => r.name).join(' · ') }}</span>
           <span class="flex justify-between text-xs"><span class="text-ink-faint">{{ ago(c.mergedAt ?? c.createdAt) }}</span><span class="mono"><span class="text-status-working">+{{ c.additions }}</span> <span class="text-status-danger">−{{ c.deletions }}</span></span></span>
         </button>
         <p v-if="!list.length" class="p-4 text-center text-ink-faint">No {{ filter }} branches.</p>
@@ -113,8 +118,11 @@ const pick = (b: string) => router.replace(`/w/${id.value}/changes/${b}`)
         <div class="flex flex-wrap items-start gap-3">
           <div class="min-w-[240px] flex-1">
             <div class="mono text-[13.5px] break-all">{{ cur.branch }}</div>
-            <div class="mt-1 text-small text-ink-faint">{{ data.nameOf(cur.agentId) }} · {{ cur.taskId ?? 'Auto' }} → {{ ws?.git.baseBranch }} · {{ cur.commits }} commits · <span class="text-status-working">+{{ cur.additions }}</span> <span class="text-status-danger">−{{ cur.deletions }}</span></div>
+            <div class="mt-1 text-small text-ink-faint">{{ data.nameOf(cur.agentId) }} · {{ cur.taskId ?? 'Auto' }}<template v-if="!cur.repos?.length"> → {{ ws?.git.baseBranch }}</template> · {{ cur.commits }} commits · <span class="text-status-working">+{{ cur.additions }}</span> <span class="text-status-danger">−{{ cur.deletions }}</span></div>
             <div class="mt-2 flex flex-wrap gap-1.5"><span class="chip" :class="ST(cur)[1]">{{ ST(cur)[0] }}</span><span class="chip" :class="QA[cur.qa]">QA {{ cur.qa }}</span></div>
+            <div v-if="cur.repos?.length" class="mt-2 flex flex-wrap gap-1.5">
+              <span v-for="r in cur.repos" :key="r.name" class="chip mono">{{ r.name }} → {{ baseOf(r.name) }} · <span class="text-status-working">+{{ r.additions }}</span> <span class="text-status-danger">−{{ r.deletions }}</span><template v-if="r.mergeCommit"> · {{ r.mergeCommit.slice(0, 7) }}</template></span>
+            </div>
           </div>
           <div class="flex flex-wrap gap-2">
             <RouterLink v-if="cur.taskId && data.task(cur.taskId)" class="btn btn-sm" :to="`/w/${id}/tasks/${cur.taskId}`">Open task</RouterLink>

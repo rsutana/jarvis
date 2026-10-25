@@ -171,6 +171,7 @@ export interface NewWorkspaceInput {
   goal: string
   color: Workspace['color']
   folderPath: string
+  repos?: Workspace['repos']
   git: Workspace['git']
   orchestrator: {
     name: string

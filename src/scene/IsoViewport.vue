@@ -51,7 +51,7 @@ const signature = computed(() => {
     if (!ws) return 'missing'
     const ts = data.tasksIn(ws.id)
     return JSON.stringify([
-      'office', ws.id, ws.color, ws.folderPath, highlight.value, route.name === 'orchestrator',
+      'office', ws.id, ws.color, ws.folderPath, ws.repos?.length, highlight.value, route.name === 'orchestrator',
       data.agents.filter((a) => a.workspaceId === ws.id).map((a) => [a.id, a.name, a.role, a.status, a.deskSlot, a.look]),
       ts.filter((t) => t.status === 'in_progress').length, ts.filter((t) => t.status === 'todo').length, ts.filter((t) => t.status === 'review').length
     ])
@@ -85,7 +85,7 @@ function build(): void {
     world = buildOffice({
       workspaceId: id,
       trim: ROOF[ws.color] ?? '#2FA58A',
-      folderPath: ws.folderPath,
+      folderPath: ws.repos?.length ? `${ws.folderPath} · ${ws.repos.length} repos` : ws.folderPath,
       agents: all.filter((a) => a.kind === 'agent'),
       orchestrator: orch,
       selectedId: highlight.value,

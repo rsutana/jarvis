@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { Agent, Orchestrator, Workspace } from '@shared/types'
+import type { Agent, Orchestrator, Repo, RepoStatus, Workspace } from '@shared/types'
 import { MODELS } from '@shared/app-types'
 import DrawerPanel from '@/shell/DrawerPanel.vue'
 import Avatar from '@/components/Avatar.vue'
@@ -40,19 +40,33 @@ watch(existing, (w) => {
   })
 }, { immediate: true })
 
-const git = ref<{ branch: string; clean: boolean; remote?: string } | null>(null)
+// the folder is one repo, or holds several (e.g. web/, mobile/, api/) that agents get together
+const found = ref<(RepoStatus & { include: boolean })[]>([])
+const scanning = ref(false)
 const gitErr = ref('')
+const rootRepo = computed(() => found.value.length === 1 && found.value[0].path === '')
 async function checkGit(): Promise<void> {
-  git.value = null
+  found.value = []
   gitErr.value = ''
   if (!f.folderPath) return
+  scanning.value = true
   try {
-    git.value = await invoke('workspace:gitStatus', f.folderPath)
-    if (!existing.value) f.baseBranch = git.value.branch
+    const saved = existing.value?.folderPath === f.folderPath ? (existing.value.repos ?? []) : []
+    const list = await invoke('workspace:scanRepos', f.folderPath, f.baseBranch)
+    found.value = list.map((r) => {
+      const s = saved.find((x) => x.path === r.path)
+      return { ...r, name: s?.name ?? r.name, baseBranch: s?.baseBranch ?? r.baseBranch, include: saved.length ? !!s : true }
+    })
+    if (rootRepo.value && !existing.value) f.baseBranch = found.value[0].branch
   } catch (e) {
     gitErr.value = (e as Error).message.replace(/^.*?: /, '')
+  } finally {
+    scanning.value = false
   }
 }
+/** What to save; keeps the saved repos when the folder could not be scanned. */
+const reposCfg = (): Repo[] | undefined =>
+  !found.value.length ? existing.value?.repos : rootRepo.value ? [] : found.value.filter((r) => r.include).map((r) => ({ name: r.name, path: r.path, baseBranch: r.baseBranch }))
 watch(() => f.folderPath, checkGit, { immediate: true })
 async function pick(): Promise<void> {
   const p = await ui.act(() => invoke('workspace:pickFolder'))
@@ -61,7 +75,7 @@ async function pick(): Promise<void> {
 
 const pool = computed(() => data.agents.filter((a) => a.kind === 'agent'))
 const toggleAgent = (id: string) => (f.agentIds = f.agentIds.includes(id) ? f.agentIds.filter((x) => x !== id) : [...f.agentIds, id])
-const canNext = computed(() => [f.name.trim().length > 0, !!f.folderPath && !!git.value, !!f.oName.trim(), true][step.value])
+const canNext = computed(() => [f.name.trim().length > 0, !!f.folderPath && (rootRepo.value || found.value.some((r) => r.include)), !!f.oName.trim(), true][step.value])
 const busy = ref(false)
 
 async function finish(): Promise<void> {
@@ -70,7 +84,7 @@ async function finish(): Promise<void> {
   if (!existing.value) {
     const w = await ui.act(() =>
       invoke('workspace:createFull', {
-        name: f.name.trim(), goal: f.goal, color: f.color, folderPath: f.folderPath, git: gitCfg,
+        name: f.name.trim(), goal: f.goal, color: f.color, folderPath: f.folderPath, repos: reposCfg(), git: gitCfg,
         orchestrator: { name: f.oName.trim(), accountId: f.oAccount, model: f.oModel, thinking: f.oThinking, autonomy: f.autonomy }, agentIds: f.agentIds
       }), `${f.name} created`)
     busy.value = false
@@ -78,7 +92,7 @@ async function finish(): Promise<void> {
     return
   }
   const id = existing.value.id
-  await ui.act(() => invoke('workspace:update', id, { name: f.name.trim(), goal: f.goal, color: f.color, folderPath: f.folderPath, git: gitCfg }))
+  await ui.act(() => invoke('workspace:update', id, { name: f.name.trim(), goal: f.goal, color: f.color, folderPath: f.folderPath, repos: reposCfg(), git: gitCfg }))
   if (orch.value) await ui.act(() => invoke('orchestrator:save', { ...orch.value!, name: f.oName.trim() || orch.value!.name, accountId: f.oAccount, model: f.oModel, thinking: f.oThinking, autonomy: f.autonomy }))
   else if (f.oName.trim()) {
     const o = await ui.act(() =>
@@ -128,14 +142,28 @@ async function finish(): Promise<void> {
       </template>
       <template v-else-if="step === 1">
         <div><label class="field-label" for="pf">Project folder</label>
-          <div class="flex gap-2"><input id="pf" v-model.lazy="f.folderPath" class="field mono text-[13px]" placeholder="/path/to/your/repo" /><button class="btn" type="button" @click="pick">Choose…</button></div></div>
-        <div v-if="git" class="card flex flex-wrap items-center gap-3 px-3.5 py-3">
-          <span class="dot bg-status-working" /><span class="flex-1 text-[13px]">Git repository found · branch <span class="mono">{{ git.branch }}</span> · {{ git.clean ? 'clean' : 'uncommitted changes' }}</span>
-          <span v-if="git.remote" class="mono text-xs text-ink-faint">{{ git.remote }}</span>
+          <div class="flex gap-2"><input id="pf" v-model.lazy="f.folderPath" class="field mono text-[13px]" placeholder="/path/to/your/repo or a folder of repos" /><button class="btn" type="button" @click="pick">Choose…</button></div></div>
+        <div v-if="scanning" class="card px-3.5 py-3 text-[13px] text-ink-faint">Looking for git repositories…</div>
+        <div v-else-if="rootRepo" class="card flex flex-wrap items-center gap-3 px-3.5 py-3">
+          <span class="dot bg-status-working" /><span class="flex-1 text-[13px]">Git repository found · branch <span class="mono">{{ found[0].branch }}</span> · {{ found[0].clean ? 'clean' : 'uncommitted changes' }}</span>
+          <span v-if="found[0].remote" class="mono text-xs text-ink-faint">{{ found[0].remote }}</span>
         </div>
-        <div v-else-if="gitErr" class="card flex items-center gap-3 border-status-review/50 px-3.5 py-3 text-[13px]"><span class="dot bg-status-review" />{{ gitErr }}. Run <span class="mono">git init</span> in the folder and make a first commit, then pick it again.</div>
+        <fieldset v-else-if="found.length" class="m-0 flex flex-col gap-2 border-0 p-0">
+          <legend class="field-label">{{ found.length }} git repositories found · every task gets all ticked repos, each on its own task branch</legend>
+          <div v-for="r in found" :key="r.path" class="flex flex-wrap items-center gap-3 rounded-row border px-3.5 py-2.5" :class="r.include ? 'border-accent' : 'border-line-strong'">
+            <input :id="`repo-${r.path}`" v-model="r.include" type="checkbox" class="size-4" />
+            <label :for="`repo-${r.path}`" class="min-w-[160px] flex-1 cursor-pointer">
+              <span class="mono block text-[13px]">{{ r.path }}/</span>
+              <span class="text-xs text-ink-faint">on <span class="mono">{{ r.branch }}</span> · {{ r.clean ? 'clean' : 'uncommitted changes' }}</span>
+            </label>
+            <label class="flex items-center gap-1.5 text-xs text-ink-faint">Base
+              <select v-model="r.baseBranch" class="field mono w-auto py-1 text-[12.5px]" :disabled="!r.include"><option v-for="b in r.branches" :key="b">{{ b }}</option></select>
+            </label>
+          </div>
+        </fieldset>
+        <div v-else-if="gitErr" class="card flex items-center gap-3 border-status-review/50 px-3.5 py-3 text-[13px]"><span class="dot bg-status-review" /><span>{{ gitErr }}.<template v-if="gitErr.startsWith('No git repository')"> Run <span class="mono">git init</span> in the folder and make a first commit, then pick it again.</template></span></div>
         <div class="grid grid-cols-2 gap-3.5">
-          <div><label class="field-label" for="bb">Base branch</label><input id="bb" v-model="f.baseBranch" class="field mono text-[13px]" /></div>
+          <div v-if="!found.length || rootRepo"><label class="field-label" for="bb">Base branch</label><input id="bb" v-model="f.baseBranch" class="field mono text-[13px]" /></div>
           <div><label class="field-label" for="bn">Task branch pattern</label><input id="bn" v-model="f.branchPattern" class="field mono text-[13px]" /></div>
         </div>
         <fieldset class="m-0 flex flex-col gap-2.5 border-0 p-0">

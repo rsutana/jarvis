@@ -34,12 +34,20 @@ export interface ChatMessage {
 }
 
 /* ---------- Workspace (01, 04, 05) ---------- */
+/** One git repo inside a multi-repo project folder (e.g. web/, mobile/, api/). */
+export interface Repo {
+  name: string;             // shown in Changes, e.g. "api"
+  path: string;             // relative to Workspace.folderPath, e.g. "api" or "apps/web"
+  baseBranch: string;       // task branches start from and merge back into this
+}
+
 export interface Workspace {
   id: Id;
   name: string;             // e.g. "Ryscript"
   color: 'teal' | 'blue' | 'clay' | 'purple' | 'amber'; // roof colour in LobbyScene
   goal: string;
   folderPath: string;       // chosen in the New workspace wizard; shown on the Project files label
+  repos?: Repo[];           // empty/undefined: folderPath itself is the one repo (git.baseBranch)
   git: { baseBranch: string; branchPattern: string; mergePolicy: 'ask' | 'auto_with_revert' };
   orchestratorId?: Id;      // undefined → "Setup incomplete" in the lobby
   agentIds: Id[];
@@ -133,6 +141,15 @@ export interface Change {
   qa: 'pending' | 'running' | 'passed' | 'failed';
   state: 'open' | 'merged' | 'closed';
   mergedAt?: ISODate;
+  repos?: RepoChange[];     // multi-repo workspaces: the repos this branch touched
+}
+
+export interface RepoChange {
+  name: string;
+  commits: number;
+  additions: number;
+  deletions: number;
+  mergeCommit?: string;
 }
 
 /* ---------- Approvals / Inbox (03) ---------- */
@@ -185,12 +202,23 @@ export interface Automation {
   lastRun?: { at: ISODate; result: 'succeeded' | 'failed' | 'waiting' };
 }
 
+export interface RepoStatus {
+  name: string;
+  path: string;             // relative to the scanned folder; '' = the folder itself
+  branch: string;           // checked out now
+  clean: boolean;
+  remote?: string;
+  branches: string[];       // local branches, for the base-branch picker
+  baseBranch: string;       // best guess (or saved choice) for the base
+}
+
 /* ---------- Electron IPC contract (preload exposes window.jarvis) ---------- */
 export interface IpcInvoke {
   'workspace:list': () => Workspace[];
   'workspace:create': (w: Omit<Workspace, 'id'>) => Workspace;
   'workspace:pickFolder': () => string | null;          // dialog.showOpenDialog
-  'workspace:gitStatus': (id: Id) => { branch: string; clean: boolean; remote?: string };
+  'workspace:gitStatus': (id: Id) => RepoStatus[];       // one per repo
+  'workspace:scanRepos': (folder: string, defaultBase: string) => RepoStatus[]; // the folder itself, or the repos under it
   'agent:list': (workspaceId?: Id) => Agent[];
   'agent:save': (a: Agent) => Agent;
   'jarvis:send': (conversationId: Id, text: string) => void; // reply streams on 'jarvis:message'

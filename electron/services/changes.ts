@@ -23,7 +23,8 @@ export function requestMerge(branch: string): void {
     via: 'Git',
     policy: 'Merging asks you',
     fields: [
-      { label: 'Branch', value: `${branch} → ${ws.git.baseBranch}` },
+      { label: 'Branch', value: `${branch} → ${ws.repos?.length ? 'each repo’s base' : ws.git.baseBranch}` },
+      ...(c.repos?.length ? [{ label: 'Repos', value: c.repos.map((r) => `${r.name} +${r.additions} −${r.deletions}`).join(' · ') }] : []),
       { label: 'QA', value: c.qa === 'passed' ? `Passed${c.qaNote ? ' · ' + c.qaNote.slice(0, 80) : ''}` : c.qa }
     ],
     body: `${c.commits} commit(s) · +${c.additions} −${c.deletions}\n\nRequested by ${agent?.name ?? c.agentId}.`
@@ -34,12 +35,15 @@ export function requestMerge(branch: string): void {
 export async function mergeBranch(workspaceId: string, branch: string): Promise<void> {
   const c = findChange(branch, workspaceId)
   const ws = findWorkspace(workspaceId)!
-  const sha = await git.merge(ws, branch, `Merge ${branch}${c.taskId ? ` (${c.taskId})` : ''}`)
+  const merged = await git.merge(ws, branch, `Merge ${branch}${c.taskId ? ` (${c.taskId})` : ''}`)
   c.state = 'merged'
   c.mergedAt = now()
-  c.mergeCommit = sha
+  if (git.isMultiRepo(ws)) {
+    c.repos = (c.repos ?? merged.map((m) => ({ name: m.repo, commits: 0, additions: 0, deletions: 0 }))).map((r) => ({ ...r, mergeCommit: merged.find((m) => m.repo === r.name)?.sha }))
+  } else c.mergeCommit = merged[0].sha
   await git.removeWorktree(ws, branch)
-  log(workspaceId, `Merged ${branch} → ${ws.git.baseBranch} (+${c.additions.toLocaleString()}).`, 'merge')
+  const into = git.isMultiRepo(ws) ? merged.map((m) => m.repo).join(', ') : ws.git.baseBranch
+  log(workspaceId, `Merged ${branch} → ${into} (+${c.additions.toLocaleString()}).`, 'merge')
   completeTask(c.taskId)
   const t = c.taskId ? db().tasks.find((x) => x.id === c.taskId) : undefined
   if (t) t.note = `Merged · +${c.additions} −${c.deletions}`
@@ -50,8 +54,11 @@ export async function mergeBranch(workspaceId: string, branch: string): Promise<
 export async function revertBranch(branch: string): Promise<void> {
   const c = findChange(branch)
   const ws = findWorkspace(c.workspaceId)!
-  if (!c.mergeCommit) throw new Error('This merge was not made by Jarvis, so there is no commit to revert.')
-  await git.revert(ws, c.mergeCommit)
+  const commits = c.repos?.length
+    ? c.repos.filter((r) => r.mergeCommit).map((r) => ({ repo: r.name, sha: r.mergeCommit! }))
+    : c.mergeCommit ? [{ repo: '', sha: c.mergeCommit }] : []
+  if (!commits.length) throw new Error('This merge was not made by Jarvis, so there is no commit to revert.')
+  await git.revert(ws, commits)
   c.state = 'closed'
   log(ws.id, `Reverted merge of ${branch}.`, 'bad')
   commit('changes')

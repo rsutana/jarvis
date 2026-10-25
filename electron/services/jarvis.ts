@@ -51,7 +51,7 @@ function stateSummary(): string {
         .map((a) => `${a.name} (${a.role}, ${a.model}, ${a.status})`)
         .join('; ')
       const open = d.tasks.filter((t) => t.workspaceId === w.id && t.status !== 'done')
-      return `- ${w.name}: goal "${w.goal}". Orchestrator: ${orch?.name ?? 'none (setup incomplete)'}. Folder: ${w.folderPath || 'not set'}. Team: ${team || 'none'}. Open tasks: ${open.map((t) => `${t.id} ${t.title} [${t.status}]`).join(', ') || 'none'}.`
+      return `- ${w.name}: goal "${w.goal}". Orchestrator: ${orch?.name ?? 'none (setup incomplete)'}. Folder: ${w.folderPath || 'not set'}${w.repos?.length ? ` (repos: ${w.repos.map((r) => r.path).join(', ')})` : ''}. Team: ${team || 'none'}. Open tasks: ${open.map((t) => `${t.id} ${t.title} [${t.status}]`).join(', ') || 'none'}.`
     })
     .join('\n')
   const pool = d.agents.filter((a) => !a.workspaceId).map((a) => `${a.name} (${a.role})`).join(', ')
