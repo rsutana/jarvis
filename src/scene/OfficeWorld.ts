@@ -48,31 +48,229 @@ const SIZES: Record<string, number[]> = {
   'plant_pot_large.glb': [0.7, 0.7, 1.3]
 }
 
+/** What a figure is doing: at the desk, or on a break (idle agents). */
+type Activity = 'work' | 'coffee' | 'nap' | 'doze'
+type Pose = 'stand' | 'sit' | 'lie'
+/** A seat from layout.idleSpots: sitters face `faces`, sleepers lie with their head toward `headTo`. */
+interface Spot { pos: number[]; seat: number; faces?: number[]; headTo?: number[]; via?: number[][] }
+/** A fading effect (steam puff, Z glyph) with its own material so opacity animates alone. */
+interface Fx { obj: THREE.Object3D; m: THREE.MeshStandardMaterial; base: THREE.Vector3; size: number }
+/** A coffee run: seat → via → pot and back. Runners share one schedule so they take turns. */
+interface Run { path: THREE.Vector2[]; cum: number[]; walk: number; dur: number; start: number; period: number; sitFacing: number; potFacing: number }
+
 interface Figure {
   root: THREE.Group
   torso: THREE.Object3D
+  head: THREE.Object3D
+  armR: THREE.Object3D
+  legs: THREE.Object3D[] // standing legs, pivoted at the hip so they can swing
+  lap?: THREE.Object3D // seated thighs + shins (sitters only)
+  tags: THREE.Group // label anchor that moves with the figure
+  mug?: THREE.Object3D
+  mouth?: THREE.Object3D // sleepers only, opens on a yawn
+  seat: number
+  hipY: number
   status: AgentStatus
+  activity: Activity
+  run?: Run
+  away: boolean // out on a coffee run
+  fx: Fx[]
   phase: number
 }
 
-function figure(parent: THREE.Object3D, x: number, z: number, y: number, a: OfficeAgent, facing: number): Figure {
+const RISE = 0.6 // s standing beside the seat before/after a run
+const POUR = 2.5 // s at the pot
+
+function figure(parent: THREE.Object3D, x: number, z: number, y: number, a: OfficeAgent, facing: number, activity: Activity = 'work', pose: Pose = 'stand', seat = 0): Figure {
   const root = new THREE.Group()
   root.position.set(x, y, z)
-  root.rotation.y = facing
+  if (pose === 'lie') {
+    // on its back: head toward `facing`, front up
+    root.rotation.order = 'YXZ'
+    root.rotation.set(-Math.PI / 2, facing, 0)
+  } else root.rotation.y = facing
   const pants = '#2B3240'
-  box(root, -0.1, 0, 0.14, 0.18, 0.72, 0, pants)
-  box(root, 0.1, 0, 0.14, 0.18, 0.72, 0, pants)
+  const hipY = pose === 'sit' ? seat : 0.72
+  const legs = [-0.1, 0.1].map((lx) => {
+    const hip = new THREE.Group()
+    hip.position.set(lx, 0.72, 0)
+    box(hip, 0, 0, 0.14, 0.18, 0.72, -0.72, pants)
+    root.add(hip)
+    return hip
+  })
+  let lap: THREE.Group | undefined
+  if (pose === 'sit') {
+    // sitters keep the standing legs too (hidden) so they can get up and walk
+    lap = new THREE.Group()
+    for (const lx of [-0.1, 0.1]) {
+      box(lap, lx, 0.15, 0.18, 0.44, 0.16, seat - 0.08, pants)
+      box(lap, lx, 0.3, 0.17, 0.17, seat - 0.08, 0, pants)
+    }
+    root.add(lap)
+    legs.forEach((l) => (l.visible = false))
+  }
+  const tags = new THREE.Group()
+  root.add(tags)
+  const armRest = pose === 'lie' ? -0.1 : -0.5
   const torso = new THREE.Group()
-  torso.position.y = 0.72
+  torso.position.y = hipY
   capsule(torso, 0, 0.3, 0, 0.21, 0.26, a.look.color)
-  capsule(torso, -0.27, 0.22, 0.04, 0.06, 0.3, a.look.color).rotation.x = -0.5
-  capsule(torso, 0.27, 0.22, 0.04, 0.06, 0.3, a.look.color).rotation.x = -0.5
-  sphere(torso, 0, 0.78, 0, 0.18, a.look.skin)
-  sphere(torso, 0, 0.86, -0.02, 0.19, a.look.hair, 0.65)
-  if (a.look.glasses) box(torso, 0, 0.78, 0.17, 0.26, 0.02, 0.06, '#1E2229')
+  capsule(torso, -0.27, 0.22, 0.04, 0.06, 0.3, a.look.color).rotation.x = armRest
+  // right arm hangs from a shoulder pivot so it can lift a mug
+  const armR = new THREE.Group()
+  armR.position.set(0.27, 0.404, -0.06)
+  armR.rotation.x = armRest
+  capsule(armR, 0, -0.21, 0, 0.06, 0.3, a.look.color)
+  torso.add(armR)
+  const head = new THREE.Group()
+  head.position.y = 0.78
+  sphere(head, 0, 0, 0, 0.18, a.look.skin)
+  sphere(head, 0, 0.08, -0.02, 0.19, a.look.hair, 0.65)
+  if (a.look.glasses) box(head, 0, 0.17, 0.26, 0.02, 0.06, -0.03, '#1E2229')
+  let mouth: THREE.Mesh | undefined
+  if (activity === 'nap' || activity === 'doze') {
+    mouth = sphere(head, 0, -0.08, 0.15, 0.05, '#3A1F1F')
+    mouth.visible = false
+  }
+  torso.add(head)
   root.add(torso)
   parent.add(root)
-  return { root, torso, status: a.status, phase: Math.random() * 6 }
+  return { root, torso, head, armR, legs, lap, tags, mouth, seat, hipY, status: a.status, activity, away: false, fx: [], phase: Math.random() * 6 }
+}
+
+/** Swap a sitter between seated and standing legs; labels ride up with the head. */
+function standUp(f: Figure, up: boolean): void {
+  if (!f.lap) return
+  f.lap.visible = !up
+  f.legs.forEach((l) => (l.visible = up))
+  f.hipY = up ? 0.72 : f.seat
+  f.tags.position.y = up ? 0.72 - f.seat : 0
+}
+
+function coffeeRun(x: number, z: number, facing: number, via: number[][]): Run {
+  const cr = layout.idleSpots.coffeeRun
+  const path = [[x, z], ...via, cr.pot].map(([px, pz]) => new THREE.Vector2(px, pz))
+  const cum = [0]
+  for (let i = 1; i < path.length; i++) cum.push(cum[i - 1] + path[i].distanceTo(path[i - 1]))
+  const walk = cum[cum.length - 1] / cr.speed
+  const potFacing = Math.atan2(cr.faces[0] - cr.pot[0], cr.faces[1] - cr.pot[1])
+  return { path, cum, walk, dur: RISE + walk + POUR + walk + RISE, start: 0, period: 1, sitFacing: facing, potFacing }
+}
+
+/** Point `d` along a run's path and the heading of that segment. */
+function along(r: Run, d: number): { x: number; z: number; heading: number } {
+  let i = 1
+  while (i < r.cum.length - 1 && r.cum[i] < d) i++
+  const [a, b] = [r.path[i - 1], r.path[i]]
+  const k = THREE.MathUtils.clamp((d - r.cum[i - 1]) / (r.cum[i] - r.cum[i - 1] || 1), 0, 1)
+  return { x: a.x + (b.x - a.x) * k, z: a.y + (b.y - a.y) * k, heading: Math.atan2(b.x - a.x, b.y - a.y) }
+}
+
+/** Pose a runner `s` seconds into its run: stand, walk to the pot, pour, walk back. Returns true once the mug is refilled. */
+function runStep(f: Figure, r: Run, s: number, t: number): boolean {
+  const speed = layout.idleSpots.coffeeRun.speed
+  const pour = RISE + r.walk
+  const back = pour + POUR
+  let { x, y: z } = r.path[0]
+  let heading = r.sitFacing
+  let walking = true
+  if (s >= RISE && s < pour) ({ x, z, heading } = along(r, (s - RISE) * speed))
+  else if (s >= back && s < r.dur - RISE) {
+    ;({ x, z, heading } = along(r, r.cum[r.cum.length - 1] - (s - back) * speed))
+    heading += Math.PI
+  } else {
+    walking = false
+    if (s >= pour && s < back) {
+      ;({ x, y: z } = r.path[r.path.length - 1])
+      heading = r.potFacing
+    }
+  }
+  standUp(f, true)
+  f.root.position.x = x
+  f.root.position.z = z
+  f.root.rotation.y = heading
+  const swing = walking ? Math.sin(t * 9) * 0.5 : 0
+  f.legs[0].rotation.x = swing
+  f.legs[1].rotation.x = -swing
+  f.torso.position.y = f.hipY + (walking ? Math.abs(Math.cos(t * 9)) * 0.03 : 0)
+  // at the pot: hold the mug out under the machine
+  const reach = s >= pour && s < back ? smooth((s - pour) / 0.4) * (1 - smooth((s - back + 0.4) / 0.4)) : 0
+  f.armR.rotation.x = -0.9 - 0.6 * reach
+  f.armR.rotation.z = 0
+  f.mug!.rotation.x = -f.armR.rotation.x
+  f.head.rotation.x = 0.2 * reach
+  return s >= pour + POUR * 0.6
+}
+
+function fadeMat(color: string, emissive = '#000000'): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({ color, emissive, emissiveIntensity: 0.5, roughness: 1, transparent: true, opacity: 0, depthWrite: false })
+}
+
+/** Mug in the right hand, with steam puffs above it. */
+function mug(f: Figure): void {
+  const hand = new THREE.Group()
+  hand.position.y = -0.42
+  cyl(hand, 0, 0.05, 0.07, 0.14, -0.02, '#F4F1EA')
+  for (let i = 0; i < 3; i++) {
+    const m = fadeMat('#FFFFFF')
+    const puff = sphere(hand, 0, 0.2, 0.05, 0.05, m)
+    puff.castShadow = false
+    f.fx.push({ obj: puff, m, base: puff.position.clone(), size: puff.scale.x })
+  }
+  f.armR.add(hand)
+  f.mug = hand
+}
+
+/** Three "Z" glyphs that drift up from a sleeper's head. */
+function zGlyphs(parent: THREE.Object3D, x: number, y: number, z: number, fx: Fx[]): void {
+  for (let i = 0; i < 3; i++) {
+    const m = fadeMat('#E7ECF5', '#8C9BFF')
+    const zg = new THREE.Group()
+    zg.position.set(x, y, z)
+    zg.rotation.y = Math.PI / 4 // face the iso camera
+    box(zg, 0, 0, 0.2, 0.03, 0.035, 0.165, m)
+    box(zg, 0, 0, 0.2, 0.03, 0.035, 0, m)
+    box(zg, 0, 0, 0.26, 0.03, 0.035, 0.065, m).rotation.z = 0.69
+    zg.traverse((o) => (o.castShadow = false))
+    parent.add(zg)
+    fx.push({ obj: zg, m, base: zg.position.clone(), size: 1 })
+  }
+}
+
+const hash = (s: string): number => Math.abs([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0))
+
+/** Seat an idle agent: coffee at the break area / kitchen, a nap on the sofa, or a doze at the desk when all are taken. */
+function onBreak(parent: THREE.Object3D, a: OfficeAgent, free: Record<'coffee' | 'nap', Spot[]>, stand: number[]): { fg: Figure; floor: number[]; head: number[] } {
+  const order: ('coffee' | 'nap')[] = hash(a.id) % 2 ? ['nap', 'coffee'] : ['coffee', 'nap']
+  const act = order.find((k) => free[k].length)
+  const s = act && free[act].shift()!
+  if (!act || !s) {
+    const fg = figure(parent, stand[0], stand[1], 0, a, Math.PI, 'doze')
+    zGlyphs(parent, stand[0] + 0.2, 1.85, stand[1], fg.fx)
+    return { fg, floor: [stand[0], 0.03, stand[1]], head: [stand[0], 1.77, stand[1]] }
+  }
+  if (act === 'nap') {
+    const dx = s.headTo![0] - s.pos[0]
+    const dz = s.headTo![1] - s.pos[1]
+    const len = Math.hypot(dx, dz)
+    const y = s.seat + 0.12 // sinks a little into the cushion
+    const fg = figure(parent, s.pos[0], s.pos[1], y, a, Math.atan2(-dx, -dz), 'nap', 'lie')
+    const [hx, hz] = [s.pos[0] + (dx / len) * 1.5, s.pos[1] + (dz / len) * 1.5]
+    zGlyphs(parent, hx + 0.15, y + 0.35, hz, fg.fx)
+    return { fg, floor: [s.pos[0] + (dx / len) * 0.85, s.seat + 0.02, s.pos[1] + (dz / len) * 0.85], head: [hx, y + 0.3, hz] }
+  }
+  const f = Math.atan2(s.faces![0] - s.pos[0], s.faces![1] - s.pos[1])
+  // sit toward the back of the seat so the shins clear the table
+  const [x, z] = [s.pos[0] - Math.sin(f) * 0.15, s.pos[1] - Math.cos(f) * 0.15]
+  const fg = figure(parent, x, z, 0, a, f, 'coffee', 'sit', s.seat)
+  mug(fg)
+  if (s.via) fg.run = coffeeRun(x, z, f, s.via)
+  return { fg, floor: [s.pos[0], 0.03, s.pos[1]], head: [x, s.seat + 1.05, z] }
+}
+
+const smooth = (v: number): number => {
+  const c = THREE.MathUtils.clamp(v, 0, 1)
+  return c * c * (3 - 2 * c)
 }
 
 function chair(parent: THREE.Object3D, x: number, z: number, rotY = 0): void {
@@ -149,30 +347,54 @@ export function buildOffice(input: OfficeInput): World {
     onWall(g, win.wall, win.from, win.to, win.y[0] - 0.06, win.y[0], '#6A7488', 0.05)
   }
 
-  // desks: one per slot; agents sit at their slot facing the monitors (-z)
+  // desks: one per slot; agents sit at their slot facing the monitors (-z); idle agents go on a break
   const bySlot = new Map(input.agents.filter((a) => a.deskSlot !== undefined).map((a) => [a.deskSlot!, a]))
+  const spots: Record<'coffee' | 'nap', Spot[]> = layout.idleSpots
+  const free = { coffee: [...spots.coffee], nap: [...spots.nap] }
+  const bz = layout.zones.find((z) => z.id === 'break-area')!.bounds
+  const peek = new Map<string, { tag: { hidden?: boolean }; fg: Figure; hover: boolean }>()
   for (const ds of layout.desks) {
     const a = bySlot.get(ds.slot)
     desk(g, ds.desk[0], ds.desk[1], a?.status === 'working', ds.mug, ds.deskPlant)
     chair(g, ds.chair[0] + 0.95, ds.chair[1])
     if (!a) continue
-    const fg = figure(g, ds.stand[0], ds.stand[1], 0, a, Math.PI)
+    const { fg, floor, head } =
+      a.status === 'idle'
+        ? onBreak(g, a, free, ds.stand)
+        : { fg: figure(g, ds.stand[0], ds.stand[1], 0, a, Math.PI), floor: [ds.stand[0], 0.03, ds.stand[1]], head: [ds.stand[0], 1.77, ds.stand[1]] }
     figures.push(fg)
     pickable(fg.root, { kind: 'agent', id: a.id })
     const sel = input.selectedId === a.id
+    // coffee runners carry their ring and labels with them
+    const [ringHost, tagHost] = fg.run ? [fg.root, fg.tags] : [g, g]
+    const fp = fg.run ? [0, 0.03, 0] : floor
+    const hp = fg.run ? [0, head[1], 0] : head
     if (sel) {
-      const ring = torus(g, ds.stand[0], 0.03, ds.stand[1], 0.62, 0.04, mat('#8C9BFF', { emissive: '#8C9BFF', emissiveIntensity: 1 }))
+      const ring = torus(ringHost, fp[0], fp[1], fp[2], 0.62, 0.04, mat('#8C9BFF', { emissive: '#8C9BFF', emissiveIntensity: 1 }))
       spinners.push(ring)
     }
-    labels.add(g, [ds.stand[0], 1.75, ds.stand[1]], { kind: 'bubble', title: BUBBLE[a.status][0], bubbleClass: BUBBLE[a.status][1] })
-    labels.add(g, [ds.stand[0], 2.25, ds.stand[1]], {
+    const [mark, cls]: [string, string] = fg.activity === 'coffee' ? ['☕', BUBBLE.idle[1]] : BUBBLE[a.status]
+    labels.add(tagHost, [hp[0], hp[1] - 0.02, hp[2]], { kind: 'bubble', title: mark, bubbleClass: cls })
+    // the break area and sofa get crowded: name tags there only show on hover, when selected, or while out for coffee
+    const inBreak = floor[0] >= bz[0] && floor[0] <= bz[2] && floor[2] >= bz[1] && floor[2] <= bz[3]
+    const tucked = !sel && (inBreak || fg.activity === 'nap')
+    const tag = labels.add(tagHost, [hp[0], hp[1] + 0.48, hp[2]], {
       title: a.name,
       sub: a.role,
       dot: DOT[a.status],
       selected: sel,
+      hidden: tucked,
       onClick: () => input.selectAgent(a.id)
     } as LabelProps)
+    if (tucked) peek.set(a.id, { tag, fg, hover: false })
   }
+  // one runner at a time on the path and at the pot
+  const runners = figures.filter((f) => f.run)
+  const slot = Math.max(0, ...runners.map((f) => f.run!.dur)) + 2
+  runners.forEach((f, i) => {
+    f.run!.start = 3 + i * slot
+    f.run!.period = Math.max(slot * runners.length, 45)
+  })
 
   // orchestrator pad
   const op = layout.orchestrator
@@ -184,7 +406,9 @@ export function buildOffice(input: OfficeInput): World {
   g.add(pad)
   const orch = input.orchestrator
   if (orch) {
-    const fg = figure(g, op.stand[0], op.stand[1], op.stand[2], orch, Math.PI / 4)
+    // an idle orchestrator stays on its pad (still clickable) with a coffee
+    const fg = figure(g, op.stand[0], op.stand[1], op.stand[2], orch, Math.PI / 4, orch.status === 'idle' ? 'coffee' : 'work')
+    if (fg.activity === 'coffee') mug(fg)
     figures.push(fg)
     pickable(fg.root, { kind: 'route', to: `/w/${input.workspaceId}/orchestrator` })
     pickable(pad, { kind: 'route', to: `/w/${input.workspaceId}/orchestrator` })
@@ -290,6 +514,7 @@ export function buildOffice(input: OfficeInput): World {
   }
 
   const working = figures.some((f) => f.status === 'working')
+  const resting = figures.some((f) => f.activity !== 'work')
   return {
     group: g,
     bounds: { minX: 0, maxX: W, minZ: 0, maxZ: D },
@@ -297,15 +522,71 @@ export function buildOffice(input: OfficeInput): World {
     zoom: layout.camera.zoom,
     animate: (t) => {
       for (const f of figures) {
-        if (f.status === 'working') {
-          f.torso.position.y = 0.72 + Math.abs(Math.sin(t * 8 + f.phase)) * 0.025
+        const ph = t + f.phase
+        if (f.activity === 'coffee') {
+          const r = f.run
+          const into = r ? (((t - r.start) % r.period) + r.period) % r.period : Infinity
+          f.away = into < (r?.dur ?? 0)
+          let k = 0
+          let hot = true
+          if (f.away) hot = runStep(f, r!, into, t)
+          else {
+            if (r) {
+              standUp(f, false)
+              f.root.position.set(r.path[0].x, 0, r.path[0].y)
+              f.root.rotation.y = r.sitFacing
+            }
+            // ~5 s loop: lift the mug, sip, lower it, wait
+            const s = ph % 5
+            k = smooth(s / 0.6) * (1 - smooth((s - 1.6) / 0.6))
+            f.armR.rotation.x = -0.9 - 1.3 * k
+            f.armR.rotation.z = -0.45 * k
+            f.mug!.rotation.x = -f.armR.rotation.x - 0.9 * k
+            f.head.rotation.x = -0.25 * k
+            f.torso.position.y = f.hipY + Math.sin(ph * 1.5) * 0.008
+          }
+          f.fx.forEach((fx, i) => {
+            const p = (ph * 0.6 + i / 3) % 1
+            fx.obj.position.y = fx.base.y + p * 0.3
+            fx.obj.scale.setScalar(fx.size * (1 + p * 1.5))
+            fx.m.opacity = hot ? 0.5 * Math.sin(p * Math.PI) * (1 - k) : 0
+          })
+        } else if (f.activity === 'nap' || f.activity === 'doze') {
+          const breath = Math.sin(ph * 1.2)
+          // every ~14 s a big yawn: head back, mouth open, one arm stretched overhead
+          const s = (ph + f.phase * 2) % 14
+          const k = smooth(s / 0.7) * (1 - smooth((s - 1.9) / 0.7))
+          const armRest = f.activity === 'nap' ? -0.1 : -0.5
+          f.armR.rotation.x = armRest + (-2.7 - armRest) * k
+          f.mouth!.visible = k > 0.05
+          f.mouth!.scale.set(0.08, 0.1 * (0.3 + 1.1 * k), 0.06)
+          if (f.activity === 'nap') {
+            f.torso.position.z = 0.012 * (breath + 1) // lying: local z is up
+            f.head.rotation.z = (0.3 + Math.sin(ph * 0.3) * 0.05) * (1 - k)
+            f.head.rotation.x = -0.35 * k
+          } else {
+            f.torso.position.y = f.hipY + breath * 0.006
+            f.head.rotation.x = (0.3 + Math.sin(ph * 0.8) * 0.15) * (1 - k) - 0.35 * k
+          }
+          f.fx.forEach((fx, i) => {
+            const p = (ph * 0.4 + i / 3) % 1
+            fx.obj.position.set(fx.base.x + p * 0.12, fx.base.y + p * 0.7, fx.base.z - p * 0.12)
+            fx.obj.scale.setScalar(fx.size * (0.6 + p * 0.9))
+            fx.m.opacity = 0.9 * Math.sin(p * Math.PI) * (1 - k)
+          })
+        } else if (f.status === 'working') {
+          f.torso.position.y = f.hipY + Math.abs(Math.sin(t * 8 + f.phase)) * 0.025
           f.torso.rotation.x = 0.08
         } else if (f.status === 'blocked') {
           f.torso.rotation.z = Math.sin(t * 2 + f.phase) * 0.06
-        } else f.torso.position.y = 0.72 + Math.sin(t * 1.5 + f.phase) * 0.008
+        } else f.torso.position.y = f.hipY + Math.sin(t * 1.5 + f.phase) * 0.008
       }
       spinners.forEach((s, i) => (s.rotation.z = t * (i === 0 ? 0.8 : 0.5)))
-      return working || spinners.length > 1
+      for (const p of peek.values()) p.tag.hidden = !(p.hover || p.fg.away)
+      return working || resting || spinners.length > 1
+    },
+    hover: (pick) => {
+      for (const [id, p] of peek) p.hover = pick?.kind === 'agent' && pick.id === id
     },
     dispose: () => {
       labels.dispose()

@@ -9,6 +9,7 @@ defineProps<{
   badge?: string
   kind?: 'tag' | 'bubble' | 'cta'
   bubbleClass?: string
+  hidden?: boolean // kept mounted but invisible (and unclickable) until revealed
   onClick?: () => void
 }>()
 </script>
@@ -30,6 +31,7 @@ defineProps<{
     :aria-pressed="onClick && selected !== undefined ? selected : undefined"
     class="flex max-w-[240px] flex-col items-start rounded-row border bg-tag px-2.5 py-1 text-left whitespace-nowrap shadow-tag"
     :class="[
+      hidden ? 'invisible' : '',
       onClick ? 'pointer-events-auto cursor-pointer hover:border-accent' : 'pointer-events-none',
       selected ? 'border-accent' : accent ? 'border-status-working/60' : 'border-line-strong'
     ]"

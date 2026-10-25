@@ -47,6 +47,22 @@
   "chairModel": { "model": "office_chair.glb", "size": [0.64, 0.64, 1.0], "rotationY": 0 },
   "characterModel": { "model": "character_base.glb", "height": 1.6, "variants": "tint shirt / hair / skin from Agent.look; toggle glasses node", "idleClip": "idle", "workingClip": "typing", "blockedClip": "idle_worried" },
   "orchestrator": { "agentId": "cyfervoid", "pad": { "model": "orchestrator_pad.glb", "position": [2.8, 13.8], "size": [3.6, 3.6, 0.2], "glow": "#4FD1B5" }, "stand": [2.8, 13.8, 0.2], "floatingRing": { "y": 2.4, "radius": 0.7 } },
+  "idleSpots": {
+    "coffeeRun": { "pot": [10.85, 15.6], "faces": [10.85, 16.45], "speed": 1.6 },
+    "coffee": [
+      { "pos": [20.0, 15.5], "seat": 0.85, "faces": [21.25, 15.55], "via": [[19.3, 15.6]] },
+      { "pos": [22.5, 15.5], "seat": 0.85, "faces": [21.25, 15.55], "via": [[22.6, 13.6], [19.3, 13.6], [19.3, 15.6]] },
+      { "pos": [21.25, 14.3], "seat": 0.85, "faces": [21.25, 15.55], "via": [[21.25, 13.6], [19.3, 13.6], [19.3, 15.6]] },
+      { "pos": [21.25, 16.8], "seat": 0.85, "faces": [21.25, 15.55], "via": [[21.25, 17.5], [19.3, 17.5], [19.3, 15.6]] },
+      { "pos": [10, 17.46], "seat": 0.75, "faces": [10, 16.5] },
+      { "pos": [11.6, 17.46], "seat": 0.75, "faces": [11.6, 16.5] },
+      { "pos": [13.2, 17.46], "seat": 0.75, "faces": [13.2, 16.5] }
+    ],
+    "nap": [
+      { "pos": [1.55, 10.6], "seat": 0.45, "headTo": [1.55, 6.9] },
+      { "pos": [1.55, 7.0], "seat": 0.45, "headTo": [1.55, 10.7] }
+    ]
+  },
   "zones": [
     { "id": "lounge", "label": null, "bounds": [0.8, 6.6, 5.4, 10.8], "items": [
       { "model": "rug.glb", "position": [3.1, 8.7], "size": [4.6, 4.2, 0.01], "color": "#D9A441" },
@@ -60,7 +76,7 @@
       { "model": "office_chair.glb", "positions": [[20.6, 3.85], [21.6, 3.85], [22.6, 3.85]], "rotationY": 180 },
       { "model": "wall_screen.glb", "wall": "wall-back-right", "from": 20, "to": 23, "y": [1.2, 2.3] }
     ] },
-    { "id": "break-area", "label": "Break area", "bounds": [18.5, 13, 24, 18], "glassWalls": "all four sides, height 2.3", "items": [
+    { "id": "break-area", "label": "Break area", "bounds": [18.5, 13, 24, 18], "glassWalls": [{ "from": [18.5, 13], "to": [24, 13] }, { "from": [24, 13], "to": [24, 18] }, { "from": [18.5, 18], "to": [24, 18] }, { "from": [18.5, 13], "to": [18.5, 14.9] }, { "from": [18.5, 16.3], "to": [18.5, 18] }], "door": { "from": [18.5, 14.9], "to": [18.5, 16.3] }, "items": [
       { "model": "rug.glb", "position": [21.3, 15.6], "size": [4.6, 4.2, 0.01], "color": "#D9A441" },
       { "model": "round_table.glb", "position": [21.25, 15.55], "size": [1.9, 1.9, 0.75] },
       { "model": "cafe_chair.glb", "positions": [[20.0, 15.5], [22.5, 15.5], [21.25, 14.3], [21.25, 16.8]], "color": "#3E8A5A" },
@@ -94,7 +110,7 @@
     { "id": "project-files", "anchor": [6.6, 2.0, 16.3], "title": "Project files", "sub": "{workspace.folderPath}", "route": "/w/:id/files" },
     { "id": "coffee", "anchor": [11.6, 1.4, 16.5], "title": "Coffee", "sub": "Fresh pot" },
     { "id": "meeting-room", "anchor": [21.5, 2.9, 2.5], "title": "Meeting room", "sub": "Free · next standup {time}" },
-    { "id": "break-area", "anchor": [21.25, 2.6, 15.5], "title": "Break area", "sub": "Idle agents rest here" },
+    { "id": "break-area", "anchor": [23.7, 0.1, 17.7], "title": "Break area", "sub": "Idle agents rest here" },
     { "id": "agent", "anchorFromStand": { "dy": 2.0 }, "title": "{agent.name}", "sub": "{agent.role}", "statusBubble": { "dy": 1.75, "working": "•••", "review": "!", "blocked": "!", "idle": "z" }, "onClick": "select-agent" }
   ]
 }

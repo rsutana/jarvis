@@ -168,7 +168,14 @@ function onMove(e: PointerEvent): void {
     }
     return
   }
-  renderer.domElement.style.cursor = pickAt(e) ? 'pointer' : 'grab'
+  const p = pickAt(e)
+  renderer.domElement.style.cursor = p ? 'pointer' : 'grab'
+  world?.hover?.(p)
+  dirty = true
+}
+function onLeave(): void {
+  world?.hover?.(undefined)
+  dirty = true
 }
 function onUp(e: PointerEvent): void {
   const d = down
@@ -246,6 +253,7 @@ onMounted(() => {
   c.addEventListener('pointerdown', onDown)
   c.addEventListener('pointermove', onMove)
   c.addEventListener('pointerup', onUp)
+  c.addEventListener('pointerleave', onLeave)
   c.addEventListener('wheel', onWheel, { passive: false })
   c.style.cursor = 'grab'
   c.setAttribute('aria-hidden', 'true')
