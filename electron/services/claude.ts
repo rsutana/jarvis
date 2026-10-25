@@ -18,6 +18,7 @@ export interface ClaudeOptions {
   systemPrompt?: string
   tools: string[] // built-in tools to expose; [] = none
   allowEdits?: boolean
+  addDirs?: string[] // extra folders the agent may read (e.g. shared skill folders)
   resume?: string
   jsonSchema?: object
   timeoutMs?: number
@@ -87,6 +88,7 @@ export function spawnClaude(opts: ClaudeOptions, onEvent: (e: ClaudeEvent) => vo
   if (opts.systemPrompt) args.push('--append-system-prompt', opts.systemPrompt)
   if (opts.resume) args.push('--resume', opts.resume)
   if (opts.jsonSchema) args.push('--json-schema', JSON.stringify(opts.jsonSchema))
+  for (const d of opts.addDirs ?? []) args.push('--add-dir', d)
 
   const env = envFor(opts.account)
   if (opts.thinking === 'high') env.MAX_THINKING_TOKENS = '24000'

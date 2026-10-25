@@ -12,6 +12,7 @@ import { accountFor, recordRateLimit, recordUsage } from './accounts'
 import * as git from './git'
 import { createApproval } from './approvals'
 import { mergeBranch } from './changes'
+import { allSkills, skillPrompt } from './skills'
 
 interface Live {
   run: StoredRun
@@ -94,6 +95,8 @@ function mapEvent(e: ClaudeEvent, cwd: string): RunEvent | null {
   }
 }
 
+const agentSkills = (agent: AnyAgent) => allSkills().filter((s) => agent.skillIds.includes(s.id))
+
 function contextFor(task: StoredTask): string {
   const parts: string[] = []
   for (const dep of task.dependsOn) {
@@ -105,7 +108,7 @@ function contextFor(task: StoredTask): string {
 
 function promptFor(task: StoredTask, agent: AnyAgent, branch: string, qaDiff?: string): string {
   const ws = findWorkspace(task.workspaceId)!
-  const skills = db().skills.filter((s) => agent.skillIds.includes(s.id))
+  const skills = agentSkills(agent)
   const lines = [
     `Workspace: ${ws.name}. Goal: ${ws.goal}`,
     `Task ${task.id}: ${task.title}`,
@@ -121,7 +124,7 @@ function promptFor(task: StoredTask, agent: AnyAgent, branch: string, qaDiff?: s
     '<the exact content to send or publish>',
     'Finish with a short report: what you changed, anything left open.'
   ]
-  if (skills.length) lines.splice(1, 0, 'Skills:\n' + skills.map((s) => `- ${s.name}: ${s.instructions}`).join('\n'))
+  if (skills.length) lines.splice(1, 0, 'Skills:\n' + skills.map(skillPrompt).join('\n\n'))
   return lines.filter(Boolean).join('\n\n')
 }
 
@@ -197,6 +200,8 @@ export async function startTask(taskId: string, resumeRun?: StoredRun, steerText
       systemPrompt: `You are ${agent.name}, ${agent.role}. ${agent.instructions}`,
       tools,
       allowEdits: edits,
+      // shared skills' folders (references/, scripts/) are readable next to the worktree
+      addDirs: agentSkills(agent).flatMap((s) => (s.origin === 'shared' && s.path ? [s.path] : [])),
       resume: resumeRun?.sessionId,
       timeoutMs: agent.guardrails.maxRunMinutes * 60_000
     },

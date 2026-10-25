@@ -10,6 +10,7 @@ import * as changes from './services/changes'
 import * as orchestrator from './services/orchestrator'
 import * as jarvis from './services/jarvis'
 import * as automations from './services/automations'
+import * as skills from './services/skills'
 import { moveBack, publicAccount, refreshPlans, setApiKey, verifyKey } from './services/accounts'
 import { toast } from './services/bus'
 import { checkClaude } from './services/claude'
@@ -68,7 +69,10 @@ function freeDesk(workspaceId: string): number | undefined {
 }
 
 const handlers: Handlers = {
-  'app:snapshot': () => snapshot(),
+  'app:snapshot': () => {
+    const s = snapshot()
+    return { ...s, skills: [...s.skills, ...skills.sharedSkills()] } // shared skills live on disk, not in db.json
+  },
   'app:resetData': async (mode) => {
     runner.stopAll()
     await resetDb(mode === 'empty' ? 'empty' : 'demo')
@@ -354,13 +358,28 @@ const handlers: Handlers = {
   },
   'automation:delete': (id) => automations.remove(str(id, 'id')),
   'skill:save': (s) => {
+    if (s.origin === 'shared' || s.id?.startsWith('shared:')) throw new Error('Shared skills live in their folder; edit SKILL.md there.')
     const list = db().skills
     const k = list.findIndex((x) => x.id === s.id)
-    const rec = { ...s, id: s.id || uid('sk-') }
+    const rec = { ...s, id: s.id || uid('sk-'), origin: 'app' as const }
     if (k >= 0) list[k] = rec
     else list.push(rec)
     commit('skills')
     return rec
+  },
+  'skill:stores': () => skills.skillStores(),
+  'skill:scan': async (includeStopped) => {
+    await skills.scanSkills(!!includeStopped)
+    return skills.skillStores()
+  },
+  'skill:read': (id) => skills.readSkillMd(str(id, 'id')),
+  'skill:install': (input, skill, storePath) => skills.installSkill(str(input, 'source'), typeof skill === 'string' ? skill : undefined, str(storePath, 'storePath')),
+  'skill:setDirs': async (dirs) => {
+    if (!Array.isArray(dirs) || dirs.some((d) => typeof d !== 'string')) throw new Error('dirs must be a list of folders')
+    db().settings.skillDirs = [...new Set(dirs.map((d) => d.trim()).filter(Boolean))]
+    commit('settings')
+    await skills.scanSkills(true)
+    return skills.skillStores()
   }
 }
 

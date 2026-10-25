@@ -38,6 +38,23 @@ export interface Skill {
   name: string
   description: string
   instructions: string
+  /** 'shared': an Agent Skills folder (SKILL.md) from the canonical store, read-only here */
+  origin?: 'app' | 'shared'
+  path?: string // shared: the skill's folder
+  location?: string // shared: which store it was found in, e.g. "WSL Ubuntu · ryscript · ~/.agents/skills"
+  source?: string // shared: where `npx skills add` got it, e.g. "vercel-labs/agent-skills"
+  url?: string // shared: its skills.sh page
+}
+
+/** A folder of shared skills. `canonical` stores (~/.agents/skills) are where installs go. */
+export interface SkillStore {
+  path: string
+  label: string
+  canonical: boolean
+  wsl?: { distro: string; user: string }
+  custom?: boolean // added by the user in Skills
+  count: number
+  error?: string
 }
 
 export interface DelegationEntry {
@@ -99,6 +116,7 @@ export interface AppSettings {
   claudePath: string // '' = resolve from PATH
   loadUserClaudeSettings: boolean // pass user-level hooks/plugins to spawned CLIs
   worktreeRoot: string // '' = userData/worktrees
+  skillDirs?: string[] // extra shared-skill folders on top of the ones found automatically
 }
 
 export interface ClaudeCheck {
@@ -177,6 +195,11 @@ declare module './types' {
     'automation:delete': (id: Id) => void
     'approval:update': (id: Id, body: string) => void
     'skill:save': (s: Skill) => Skill
+    'skill:stores': () => SkillStore[]
+    'skill:scan': (includeStopped?: boolean) => SkillStore[] // includeStopped also boots stopped WSL distros
+    'skill:read': (id: Id) => string // a shared skill's SKILL.md
+    'skill:install': (input: string, skill: string | undefined, storePath: string) => string // runs `npx skills add`
+    'skill:setDirs': (dirs: string[]) => SkillStore[]
   }
   interface IpcEvents {
     /** Main changed these collections; stores refetch the snapshot slice. */
