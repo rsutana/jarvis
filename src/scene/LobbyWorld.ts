@@ -27,8 +27,8 @@ function building(g: THREE.Group, labels: Labels, b: LobbyBuilding, go: (to: str
   const { x, z, w, d } = b.plot
   const cx = x + w / 2
   const cz = z + d / 2
-  const floors = Math.max(2, Math.min(6, 1 + Math.ceil(b.agents / 3)))
-  const height = floors * 1.5 + 1.5
+  // single-storey office: entrance + one window band, whatever the team size
+  const height = 2.6
   const bw = w - 1
   const bd = d - 1
   const lit = b.working > 0
@@ -36,13 +36,10 @@ function building(g: THREE.Group, labels: Labels, b: LobbyBuilding, go: (to: str
   // plot paving + lawn edge
   box(bg, cx, cz, w, d, 0.05, 0, '#B4B9C0')
   box(bg, cx, cz, bw, bd, height, 0.05, '#DCE0E6')
-  // window bands per floor on the two camera-facing faces (+z, +x)
+  // window band on the two camera-facing faces (+z, +x), above the entrance awning
   const glass = lit ? mat('#FFE7A3', { emissive: '#FFD873', emissiveIntensity: 0.9 }) : mat('#3B4A60', { roughness: 0.3 })
-  for (let f = 0; f < floors; f++) {
-    const y = 1.4 + f * 1.5
-    box(bg, cx, cz + bd / 2 + 0.02, bw - 0.6, 0.04, 0.7, y, glass)
-    box(bg, cx + bw / 2 + 0.02, cz, 0.04, bd - 0.6, 0.7, y, glass)
-  }
+  box(bg, cx, cz + bd / 2 + 0.02, bw - 0.6, 0.04, 0.5, 1.45, glass)
+  box(bg, cx + bw / 2 + 0.02, cz, 0.04, bd - 0.6, 0.5, 1.45, glass)
   // roof slab + parapet in the workspace colour
   box(bg, cx, cz, bw + 0.3, bd + 0.3, 0.3, height + 0.05, b.roof)
   box(bg, cx, cz, bw - 0.4, bd - 0.4, 0.12, height + 0.35, shade(b.roof, 0.8))

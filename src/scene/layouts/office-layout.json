@@ -50,10 +50,10 @@
   "idleSpots": {
     "coffeeRun": { "pot": [10.85, 15.6], "faces": [10.85, 16.45], "speed": 1.6 },
     "coffee": [
-      { "pos": [20.0, 15.5], "seat": 0.85, "faces": [21.25, 15.55], "via": [[19.3, 15.6]] },
-      { "pos": [22.5, 15.5], "seat": 0.85, "faces": [21.25, 15.55], "via": [[22.6, 13.6], [19.3, 13.6], [19.3, 15.6]] },
-      { "pos": [21.25, 14.3], "seat": 0.85, "faces": [21.25, 15.55], "via": [[21.25, 13.6], [19.3, 13.6], [19.3, 15.6]] },
-      { "pos": [21.25, 16.8], "seat": 0.85, "faces": [21.25, 15.55], "via": [[21.25, 17.5], [19.3, 17.5], [19.3, 15.6]] },
+      { "pos": [20.0, 15.5], "seat": 0.5, "faces": [21.25, 15.55], "via": [[19.3, 15.6]] },
+      { "pos": [22.5, 15.5], "seat": 0.5, "faces": [21.25, 15.55], "via": [[22.6, 13.6], [19.3, 13.6], [19.3, 15.6]] },
+      { "pos": [21.25, 14.3], "seat": 0.5, "faces": [21.25, 15.55], "via": [[21.25, 13.6], [19.3, 13.6], [19.3, 15.6]] },
+      { "pos": [21.25, 16.8], "seat": 0.5, "faces": [21.25, 15.55], "via": [[21.25, 17.5], [19.3, 17.5], [19.3, 15.6]] },
       { "pos": [10, 17.46], "seat": 0.75, "faces": [10, 16.5] },
       { "pos": [11.6, 17.46], "seat": 0.75, "faces": [11.6, 16.5] },
       { "pos": [13.2, 17.46], "seat": 0.75, "faces": [13.2, 16.5] }
@@ -69,24 +69,31 @@
       { "model": "sofa_3seat.glb", "position": [1.4, 8.8], "size": [1.45, 3.8, 0.9], "rotationY": 90, "color": "#66728A" },
       { "model": "coffee_table.glb", "position": [3.65, 8.7], "size": [1.3, 1.6, 0.4] }
     ] },
-    { "id": "meeting-room", "label": "Meeting room", "bounds": [19, 0, 24, 5], "glassWalls": [{ "from": [19, 5], "to": [24, 5] }, { "from": [19, 0], "to": [19, 3.4] }, { "from": [19, 4.6], "to": [19, 5] }], "door": { "from": [19, 3.4], "to": [19, 4.6] }, "items": [
+    { "id": "meeting-room", "label": "Meeting room", "bounds": [19, 0, 24, 5], "glassWalls": [{ "from": [19, 5], "to": [24, 5] }, { "from": [19, 0], "to": [19, 3.4] }, { "from": [19, 4.6], "to": [19, 5] }], "door": { "from": [19, 3.4], "to": [19, 4.6] }, "sign": { "text": "Meeting Room", "position": [21.5, 5.06, 1.95], "rotationY": 0 }, "items": [
       { "model": "rug.glb", "position": [21.5, 2.5], "size": [4.6, 4.6, 0.01], "color": "#3E4C66" },
       { "model": "meeting_table.glb", "position": [21.6, 2.35], "size": [2.8, 1.9, 0.75] },
       { "model": "office_chair.glb", "positions": [[20.6, 0.85], [21.6, 0.85], [22.6, 0.85]], "rotationY": 0 },
       { "model": "office_chair.glb", "positions": [[20.6, 3.85], [21.6, 3.85], [22.6, 3.85]], "rotationY": 180 },
       { "model": "wall_screen.glb", "wall": "wall-back-right", "from": 20, "to": 23, "y": [1.2, 2.3] }
     ] },
-    { "id": "break-area", "label": "Break area", "bounds": [18.5, 13, 24, 18], "glassWalls": [{ "from": [18.5, 13], "to": [24, 13] }, { "from": [24, 13], "to": [24, 18] }, { "from": [18.5, 18], "to": [24, 18] }, { "from": [18.5, 13], "to": [18.5, 14.9] }, { "from": [18.5, 16.3], "to": [18.5, 18] }], "door": { "from": [18.5, 14.9], "to": [18.5, 16.3] }, "items": [
+    { "id": "break-area", "label": "Break area", "bounds": [18.5, 13, 24, 18], "glassWalls": [{ "from": [18.5, 13], "to": [24, 13] }, { "from": [24, 13], "to": [24, 18] }, { "from": [18.5, 18], "to": [24, 18] }, { "from": [18.5, 13], "to": [18.5, 14.9] }, { "from": [18.5, 16.3], "to": [18.5, 18] }], "door": { "from": [18.5, 14.9], "to": [18.5, 16.3] }, "sign": { "text": "Break Area", "position": [20.4, 18.06, 1.95], "rotationY": 0 }, "items": [
       { "model": "rug.glb", "position": [21.3, 15.6], "size": [4.6, 4.2, 0.01], "color": "#D9A441" },
-      { "model": "round_table.glb", "position": [21.25, 15.55], "size": [1.9, 1.9, 0.75] },
-      { "model": "cafe_chair.glb", "positions": [[20.0, 15.5], [22.5, 15.5], [21.25, 14.3], [21.25, 16.8]], "color": "#3E8A5A" },
+      { "model": "round_table.glb", "position": [21.25, 15.55], "size": [1.5, 1.5, 0.76] },
+      { "model": "cafe_chair.glb", "positions": [[20.0, 15.5], [22.5, 15.5], [21.25, 14.3], [21.25, 16.8]], "faces": [21.25, 15.55], "color": "#3E8A5A" },
       { "model": "plant_pot_large.glb", "position": [23.3, 13.9] }
     ] },
     { "id": "kitchen", "label": "Coffee", "bounds": [9, 16, 14.2, 17.8], "items": [
       { "model": "kitchen_counter.glb", "position": [11.6, 16.5], "size": [5.2, 1.0, 1.0] },
-      { "model": "coffee_machine.glb", "position": [10.85, 16.45], "onCounter": true },
-      { "model": "microwave.glb", "position": [9.7, 16.45], "onCounter": true },
-      { "model": "pastry_tray.glb", "position": [12.3, 16.5], "onCounter": true },
+      { "model": "grinder.glb", "position": [9.6, 16.4], "onCounter": true },
+      { "model": "coffee_machine.glb", "position": [10.85, 16.4], "onCounter": true },
+      { "model": "milk_jug.glb", "position": [11.55, 16.6], "onCounter": true },
+      { "model": "cup.glb", "position": [12.0, 16.65], "onCounter": true },
+      { "model": "pastry_tray.glb", "position": [12.65, 16.55], "onCounter": true },
+      { "model": "cake_plate.glb", "position": [13.45, 16.6], "onCounter": true },
+      { "model": "back_cabinet.glb", "position": [9.6, 15.62], "size": [1.2, 0.6, 0.9] },
+      { "model": "microwave.glb", "position": [9.55, 15.6], "elevation": 0.9 },
+      { "model": "cup.glb", "position": [10.0, 15.7], "elevation": 0.9 },
+      { "model": "planter_box.glb", "position": [14.75, 16.5] },
       { "model": "bar_stool.glb", "positions": [[10, 17.46], [11.6, 17.46], [13.2, 17.46]] }
     ] }
   ],
@@ -108,9 +115,7 @@
     { "id": "task-board", "anchor": [0, 3.1, 4.8], "title": "Task board", "sub": "{active} active · {todo} todo · {review} review", "route": "/w/:id/tasks" },
     { "id": "orchestrator", "anchor": [2.8, 2.7, 13.8], "title": "{orchestrator.name}", "sub": "Orchestrator · {status}", "route": "/w/:id/orchestrator", "accent": "status.working" },
     { "id": "project-files", "anchor": [6.6, 2.0, 16.3], "title": "Project files", "sub": "{workspace.folderPath}", "route": "/w/:id/files" },
-    { "id": "coffee", "anchor": [11.6, 1.4, 16.5], "title": "Coffee", "sub": "Fresh pot" },
-    { "id": "meeting-room", "anchor": [21.5, 2.9, 2.5], "title": "Meeting room", "sub": "Free · next standup {time}" },
-    { "id": "break-area", "anchor": [23.7, 0.1, 17.7], "title": "Break area", "sub": "Idle agents rest here" },
+    { "id": "coffee", "anchor": [11.2, 1.95, 16.3], "title": "Coffee", "sub": "Fresh pot" },
     { "id": "agent", "anchorFromStand": { "dy": 2.0 }, "title": "{agent.name}", "sub": "{agent.role}", "statusBubble": { "dy": 1.75, "working": "•••", "review": "!", "blocked": "!", "idle": "z" }, "onClick": "select-agent" }
   ]
 }

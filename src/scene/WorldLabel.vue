@@ -1,7 +1,9 @@
 <script setup lang="ts">
 // World-space label over the 3D scene (CSS2DObject host). Real buttons so they stay focusable.
+import Icon, { type IconName } from '@/components/Icon.vue'
 defineProps<{
   title: string
+  icon?: IconName // leading glyph, e.g. the coffee counter's cup
   sub?: string
   dot?: string // status colour class, e.g. bg-status-working
   accent?: boolean
@@ -38,10 +40,15 @@ defineProps<{
     @click.stop="onClick?.()"
     @pointerdown.stop
   >
-    <span class="flex items-center gap-1.5 text-small font-semibold text-ink">
-      <span v-if="dot" class="dot" :class="dot" aria-hidden="true" />{{ title }}
-      <span v-if="badge" class="rounded bg-status-review px-1 text-[10px] font-bold text-app">{{ badge }}</span>
+    <span class="flex items-center gap-2">
+      <Icon v-if="icon" :name="icon" :size="22" class="flex-none text-ink-muted" />
+      <span class="flex flex-col items-start">
+        <span class="flex items-center gap-1.5 text-small font-semibold text-ink">
+          <span v-if="dot" class="dot" :class="dot" aria-hidden="true" />{{ title }}
+          <span v-if="badge" class="rounded bg-status-review px-1 text-[10px] font-bold text-app">{{ badge }}</span>
+        </span>
+        <span v-if="sub" class="max-w-[220px] truncate font-sans text-[11px] text-ink-faint">{{ sub }}</span>
+      </span>
     </span>
-    <span v-if="sub" class="max-w-[220px] truncate font-sans text-[11px] text-ink-faint">{{ sub }}</span>
   </component>
 </template>

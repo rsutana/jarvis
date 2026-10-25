@@ -26,7 +26,8 @@ const P = {
   minus: 'M5 12h14',
   target: 'M12 3v4M12 17v4M3 12h4M17 12h4M12 9a3 3 0 100 6 3 3 0 000-6z',
   stop: 'M6 6h12v12H6z',
-  play: 'M7 4l13 8-13 8z'
+  play: 'M7 4l13 8-13 8z',
+  coffee: 'M5 10h11v4a5 5 0 01-5 5h-1a5 5 0 01-5-5zM16 11h1.5a2.5 2.5 0 010 5H16M8 3.5v3M11 3.5v3M14 3.5v3'
 } as const
 export type IconName = keyof typeof P
 defineProps<{ name: IconName; size?: number }>()

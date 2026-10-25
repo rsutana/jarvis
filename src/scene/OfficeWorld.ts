@@ -40,7 +40,7 @@ const DOT: Record<AgentStatus, string> = { working: 'bg-status-working', review:
 /** Default footprints for props the JSON places without a size. */
 const SIZES: Record<string, number[]> = {
   'office_chair.glb': [0.64, 0.64, 1.0],
-  'cafe_chair.glb': [0.5, 0.5, 0.85],
+  'cafe_chair.glb': [0.64, 0.62, 0.92],
   'coffee_machine.glb': [0.35, 0.35, 0.45],
   'microwave.glb': [0.6, 0.4, 0.35],
   'pastry_tray.glb': [0.5, 0.35, 0.1],
@@ -260,8 +260,8 @@ function onBreak(parent: THREE.Object3D, a: OfficeAgent, free: Record<'coffee' |
     return { fg, floor: [s.pos[0] + (dx / len) * 0.85, s.seat + 0.02, s.pos[1] + (dz / len) * 0.85], head: [hx, y + 0.3, hz] }
   }
   const f = Math.atan2(s.faces![0] - s.pos[0], s.faces![1] - s.pos[1])
-  // sit toward the back of the seat so the shins clear the table
-  const [x, z] = [s.pos[0] - Math.sin(f) * 0.15, s.pos[1] - Math.cos(f) * 0.15]
+  // sit a little back so the shins clear the table, but not into the backrest
+  const [x, z] = [s.pos[0] - Math.sin(f) * 0.05, s.pos[1] - Math.cos(f) * 0.05]
   const fg = figure(parent, x, z, 0, a, f, 'coffee', 'sit', s.seat)
   mug(fg)
   if (s.via) fg.run = coffeeRun(x, z, f, s.via)
@@ -303,6 +303,154 @@ function desk(parent: THREE.Object3D, x: number, z: number, working: boolean, mu
   }
 }
 
+/** Upholstered café armchair (break area), turned to face (fx, fz). Seat top at 0.5. */
+function cafeChair(parent: THREE.Object3D, x: number, z: number, fx: number, fz: number, color: string): void {
+  const c = new THREE.Group()
+  c.position.set(x, 0, z)
+  c.rotation.y = Math.atan2(fx - x, fz - z)
+  for (const [lx, lz] of [[-0.24, -0.24], [0.24, -0.24], [-0.24, 0.24], [0.24, 0.24]]) box(c, lx, lz, 0.05, 0.05, 0.36, 0, '#2B3240')
+  box(c, 0, 0, 0.64, 0.62, 0.14, 0.36, color) // cushion
+  box(c, 0, -0.27, 0.64, 0.1, 0.52, 0.42, shade(color, 0.85)) // backrest
+  for (const ax of [-0.29, 0.29]) box(c, ax, 0.02, 0.06, 0.5, 0.16, 0.5, shade(color, 0.85)) // arms
+  parent.add(c)
+}
+
+/** Round wooden café table on a single pedestal. */
+function roundTable(parent: THREE.Object3D, x: number, z: number, d: number, h: number): void {
+  cyl(parent, x, z, 0.32, 0.04, 0, '#2B3240') // foot
+  cyl(parent, x, z, 0.06, h - 0.1, 0.04, '#3A414C') // post
+  cyl(parent, x, z, d / 2, 0.05, h - 0.07, WOOD[2]) // darker rim
+  cyl(parent, x, z, d / 2 - 0.04, 0.03, h - 0.03, WOOD[0]) // top
+}
+
+/* ---------- coffee counter (kitchen zone): modern café bar ---------- */
+const RED = '#D8452F'
+const STEEL = '#DADDE2'
+const BLACK = '#22262E'
+
+/** White counter with a recessed kick plate; the top overhangs the stool side (+z). Top at `h`. */
+function counter(parent: THREE.Object3D, x: number, z: number, w: number, d: number, h: number): void {
+  box(parent, x, z, w - 0.1, d - 0.2, 0.1, 0, '#3A414C')
+  box(parent, x, z, w - 0.04, d - 0.1, h - 0.15, 0.1, '#ECEEF1')
+  box(parent, x, z + 0.04, w, d + 0.08, 0.05, h - 0.05, '#F8F9FA')
+}
+
+/** White mug with coffee in it, standing at y. */
+function mugAt(parent: THREE.Object3D, x: number, z: number, y: number): void {
+  cyl(parent, x, z, 0.07, 0.11, y, '#FFFFFF')
+  cyl(parent, x, z, 0.058, 0.01, y + 0.105, '#4A2C1C')
+}
+
+/** Two-group espresso machine facing the stools (+z), red panel on the camera side. */
+function espresso(parent: THREE.Object3D, x: number, z: number, y: number): void {
+  box(parent, x, z, 0.8, 0.46, 0.1, y, BLACK) // base
+  box(parent, x, z + 0.16, 0.64, 0.12, 0.015, y + 0.1, '#5A616D') // drip grate
+  box(parent, x - 0.03, z - 0.04, 0.7, 0.38, 0.42, y + 0.1, STEEL) // body
+  box(parent, x + 0.345, z - 0.04, 0.05, 0.38, 0.42, y + 0.1, RED) // side panel
+  box(parent, x - 0.03, z - 0.04, 0.72, 0.4, 0.04, y + 0.52, '#C3C8CF') // cup warmer
+  for (const gx of [-0.2, 0.14]) {
+    box(parent, x + gx, z + 0.16, 0.22, 0.02, 0.2, y + 0.24, '#2A2F38') // group panel
+    cyl(parent, x + gx, z + 0.2, 0.05, 0.05, y + 0.2, '#9AA1AB') // portafilter
+  }
+  cyl(parent, x + 0.27, z + 0.17, 0.012, 0.22, y + 0.12, '#9AA1AB') // steam wand
+  mugAt(parent, x - 0.18, z - 0.04, y + 0.56)
+}
+
+/** Red grinder with a mug on top. */
+function grinder(parent: THREE.Object3D, x: number, z: number, y: number): void {
+  box(parent, x, z, 0.3, 0.3, 0.22, y, RED)
+  box(parent, x, z, 0.26, 0.26, 0.03, y + 0.22, BLACK)
+  mugAt(parent, x, z, y + 0.25)
+}
+
+function milkJug(parent: THREE.Object3D, x: number, z: number, y: number): void {
+  cyl(parent, x, z, 0.07, 0.16, y, STEEL)
+  box(parent, x + 0.08, z, 0.03, 0.02, 0.09, y + 0.04, '#9AA1AB') // handle
+}
+
+/** Wooden board of buns. */
+function pastries(parent: THREE.Object3D, x: number, z: number, y: number): void {
+  box(parent, x, z, 0.56, 0.38, 0.03, y, '#C98A55')
+  for (const bx of [-0.17, 0, 0.17]) for (const bz of [-0.08, 0.08]) sphere(parent, x + bx, y + 0.07, z + bz, 0.07, '#E2A74E', 0.7)
+}
+
+function cakePlate(parent: THREE.Object3D, x: number, z: number, y: number): void {
+  cyl(parent, x, z, 0.17, 0.02, y, '#F4F1EA')
+  cyl(parent, x, z, 0.1, 0.08, y + 0.02, '#B5743A')
+  cyl(parent, x, z, 0.1, 0.015, y + 0.1, '#F4EDE2')
+}
+
+/** Dark cabinet behind the counter for the oven. */
+function backCabinet(parent: THREE.Object3D, x: number, z: number, w: number, d: number, h: number): void {
+  box(parent, x, z, w, d, h - 0.04, 0, '#4E4A46')
+  box(parent, x, z, w + 0.04, d + 0.04, 0.04, h - 0.04, '#6E6862')
+  box(parent, x, z + d / 2, 0.02, 0.02, h - 0.2, 0.1, '#3A3633') // door split
+}
+
+/** Countertop oven with a warm, lit window. */
+function oven(parent: THREE.Object3D, x: number, z: number, y: number): void {
+  box(parent, x, z, 0.62, 0.44, 0.4, y, '#262B35')
+  box(parent, x - 0.06, z + 0.22, 0.42, 0.02, 0.26, y + 0.07, mat('#3A2414', { emissive: '#F2A33A', emissiveIntensity: 0.55 }))
+  box(parent, x + 0.23, z + 0.22, 0.1, 0.02, 0.28, y + 0.06, '#3A414C') // controls
+}
+
+function planterBox(parent: THREE.Object3D, x: number, z: number): void {
+  box(parent, x, z, 0.56, 0.56, 0.42, 0, '#C98A55')
+  box(parent, x, z, 0.6, 0.6, 0.05, 0.42, '#B07444')
+  sphere(parent, x, 0.78, z, 0.3, '#2F8F5F')
+  sphere(parent, x + 0.14, 1.02, z - 0.06, 0.22, '#45B87A')
+  sphere(parent, x - 0.12, 0.96, z + 0.1, 0.2, '#3FA06E')
+}
+
+/** Round wooden stool on four legs. Seat top at 0.75. */
+function woodStool(parent: THREE.Object3D, x: number, z: number): void {
+  for (const [lx, lz] of [[-0.11, -0.11], [0.11, -0.11], [-0.11, 0.11], [0.11, 0.11]]) box(parent, x + lx, z + lz, 0.04, 0.04, 0.7, 0, '#4A3426')
+  box(parent, x, z, 0.24, 0.03, 0.03, 0.28, '#4A3426') // rungs
+  box(parent, x, z, 0.03, 0.24, 0.03, 0.28, '#4A3426')
+  cyl(parent, x, z, 0.2, 0.06, 0.69, '#6B4A33')
+}
+
+/**
+ * Name plaque mounted on a wall (meeting room, break area). The text is drawn into a
+ * canvas texture, redrawn once the UI font has loaded; `textures` are disposed with the world.
+ */
+function sign(parent: THREE.Object3D, text: string, pos: number[], rotY: number, textures: THREE.Texture[]): void {
+  const [w, h] = [1.9, 0.44]
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 118
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.anisotropy = 4
+  textures.push(tex)
+  const font = '600 56px "IBM Plex Sans", system-ui, sans-serif'
+  const draw = () => {
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#1F2633'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.strokeStyle = '#6A7488'
+    ctx.lineWidth = 6
+    ctx.strokeRect(3, 3, canvas.width - 6, canvas.height - 6)
+    ctx.fillStyle = '#E7ECF5'
+    ctx.font = font
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2 + 3)
+    tex.needsUpdate = true
+  }
+  draw()
+  document.fonts?.load(font).then(draw, () => undefined)
+  const s = new THREE.Group()
+  s.position.set(pos[0], pos[2], pos[1])
+  s.rotation.y = THREE.MathUtils.degToRad(rotY)
+  box(s, 0, -0.025, w + 0.08, 0.04, h + 0.08, -(h + 0.08) / 2, '#2A3140') // backing frame
+  // lit a little so it reads in the dim office
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: tex, emissive: '#FFFFFF', emissiveMap: tex, emissiveIntensity: 0.35, roughness: 0.6 }))
+  face.position.z = 0.001
+  s.add(face)
+  parent.add(s)
+}
+
 function plant(parent: THREE.Object3D, x: number, z: number): void {
   cyl(parent, x, z, 0.3, 0.55, 0, '#E7E2D8')
   sphere(parent, x, 0.95, z, 0.4, '#2F8F5F')
@@ -321,6 +469,7 @@ export function buildOffice(input: OfficeInput): World {
   const labels = new Labels()
   const figures: Figure[] = []
   const spinners: THREE.Object3D[] = []
+  const textures: THREE.Texture[] = []
   const [W, D] = layout.room.size
   const floor = layout.room.floor
 
@@ -416,29 +565,38 @@ export function buildOffice(input: OfficeInput): World {
 
   // zones
   for (const zn of layout.zones) {
-    for (const it of zn.items as { model: string; position?: number[]; positions?: number[][]; size?: number[]; rotationY?: number; color?: string; onCounter?: boolean; wall?: string; from?: number; to?: number; y?: number[] }[]) {
+    for (const it of zn.items as { model: string; position?: number[]; positions?: number[][]; faces?: number[]; size?: number[]; rotationY?: number; color?: string; onCounter?: boolean; elevation?: number; wall?: string; from?: number; to?: number; y?: number[] }[]) {
       const size = it.size ?? SIZES[it.model] ?? [0.6, 0.6, 0.6]
       const ps = it.positions ?? (it.position ? [it.position] : [])
       for (const p of ps) {
-        const y = it.onCounter ? 1.0 : 0
+        const y = it.elevation ?? (it.onCounter ? 1.0 : 0)
         if (it.model === 'rug.glb') box(g, p[0], p[1], size[0], size[1], 0.02, 0.002, it.color ?? '#D9A441')
         else if (it.model === 'sofa_3seat.glb') {
           box(g, p[0], p[1], size[0], size[1], 0.45, 0, it.color ?? '#66728A')
           box(g, p[0] - size[0] / 2 + 0.15, p[1], 0.3, size[1], 0.9, 0, shade(it.color ?? '#66728A', 0.85))
         } else if (it.model === 'office_chair.glb') chair(g, p[0], p[1], it.rotationY)
-        else if (it.model === 'round_table.glb') {
-          cyl(g, p[0], p[1], 0.08, size[2], 0, '#3A414C')
-          cyl(g, p[0], p[1], size[0] / 2, 0.06, size[2] - 0.06, WOOD[0])
-        } else if (it.model === 'bar_stool.glb' || it.model === 'cafe_chair.glb') {
-          cyl(g, p[0], p[1], 0.05, size[2] - 0.08, 0, '#3A414C')
-          cyl(g, p[0], p[1], size[0] / 2, 0.08, size[2] - 0.08, it.color ?? DARK)
-        } else if (it.model === 'plant_pot_large.glb') plant(g, p[0], p[1])
-        else if (it.model === 'coffee_machine.glb') box(g, p[0], p[1], size[0], size[1], size[2], y, '#1A1E25')
+        else if (it.model === 'round_table.glb') roundTable(g, p[0], p[1], size[0], size[2])
+        else if (it.model === 'cafe_chair.glb') cafeChair(g, p[0], p[1], it.faces?.[0] ?? p[0], it.faces?.[1] ?? p[1] + 1, it.color ?? '#3E8A5A')
+        else if (it.model === 'bar_stool.glb') woodStool(g, p[0], p[1])
+        else if (it.model === 'plant_pot_large.glb') plant(g, p[0], p[1])
+        else if (it.model === 'kitchen_counter.glb') counter(g, p[0], p[1], size[0], size[1], size[2])
+        else if (it.model === 'coffee_machine.glb') espresso(g, p[0], p[1], y)
+        else if (it.model === 'grinder.glb') grinder(g, p[0], p[1], y)
+        else if (it.model === 'milk_jug.glb') milkJug(g, p[0], p[1], y)
+        else if (it.model === 'cup.glb') mugAt(g, p[0], p[1], y)
+        else if (it.model === 'pastry_tray.glb') pastries(g, p[0], p[1], y)
+        else if (it.model === 'cake_plate.glb') cakePlate(g, p[0], p[1], y)
+        else if (it.model === 'back_cabinet.glb') backCabinet(g, p[0], p[1], size[0], size[1], size[2])
+        else if (it.model === 'microwave.glb') oven(g, p[0], p[1], y)
+        else if (it.model === 'planter_box.glb') planterBox(g, p[0], p[1])
         else if (it.model === 'meeting_table.glb' || it.model === 'coffee_table.glb') box(g, p[0], p[1], size[0], size[1], size[2], 0, WOOD[0])
         else box(g, p[0], p[1], size[0], size[1], size[2], y, it.color ?? '#D5DAE1')
       }
       if (it.wall && it.from !== undefined && it.to !== undefined && it.y) onWall(g, it.wall, it.from, it.to, it.y[0], it.y[1], mat('#1A1E25', { emissive: '#3B4A60', emissiveIntensity: 0.6 }))
     }
+    // name plaque on the zone's camera-facing wall
+    const sg = (zn as { sign?: { text: string; position: number[]; rotationY?: number } }).sign
+    if (sg) sign(g, sg.text, sg.position, sg.rotationY ?? 0, textures)
     // glass walls
     const gw = (zn as { glassWalls?: unknown }).glassWalls
     const glassMat = mat('#9FC3E8', { opacity: 0.18, roughness: 0.1 })
@@ -508,10 +666,8 @@ export function buildOffice(input: OfficeInput): World {
   else labels.add(g, lo.anchor!, { title: 'No orchestrator', sub: 'Set one up in Settings', dot: 'bg-status-review', onClick: () => input.go(`/w/${input.workspaceId}/settings`) })
   const lf = layout.labels.find((l) => l.id === 'project-files')!
   labels.add(g, lf.anchor!, { title: 'Project files', sub: input.folderPath || 'No folder yet · choose one', onClick: () => input.go(`/w/${input.workspaceId}/settings`) })
-  for (const id of ['coffee', 'meeting-room', 'break-area']) {
-    const l = layout.labels.find((x) => x.id === id)!
-    labels.add(g, l.anchor!, { title: l.title, sub: id === 'meeting-room' ? 'Free' : l.sub })
-  }
+  const lc = layout.labels.find((x) => x.id === 'coffee')!
+  labels.add(g, lc.anchor!, { title: lc.title, sub: lc.sub, icon: 'coffee' })
 
   const working = figures.some((f) => f.status === 'working')
   const resting = figures.some((f) => f.activity !== 'work')
@@ -590,6 +746,7 @@ export function buildOffice(input: OfficeInput): World {
     },
     dispose: () => {
       labels.dispose()
+      textures.forEach((t) => t.dispose())
       disposeTree(g)
     }
   }
