@@ -12,6 +12,7 @@ import * as jarvis from './services/jarvis'
 import * as automations from './services/automations'
 import * as skills from './services/skills'
 import * as mcp from './services/mcp'
+import * as claudeMcp from './services/claudeMcp'
 import { moveBack, publicAccount, refreshPlans, setApiKey, verifyKey } from './services/accounts'
 import { toast } from './services/bus'
 import { checkClaude } from './services/claude'
@@ -72,7 +73,8 @@ function freeDesk(workspaceId: string): number | undefined {
 const handlers: Handlers = {
   'app:snapshot': () => {
     const s = snapshot()
-    return { ...s, skills: [...s.skills, ...skills.sharedSkills()] } // shared skills live on disk, not in db.json
+    // shared skills and Claude Code's own MCP servers live on disk, not in db.json
+    return { ...s, skills: [...s.skills, ...skills.sharedSkills()], localMcps: claudeMcp.localMcps() }
   },
   'app:resetData': async (mode) => {
     runner.stopAll()
@@ -327,6 +329,8 @@ const handlers: Handlers = {
   'mcp:configure': (id, cfg, secrets) => mcp.configureMcp(str(id, 'id'), obj(cfg, 'config'), secrets && typeof secrets === 'object' ? secrets : {}),
   'mcp:connect': (id) => mcp.connectMcp(str(id, 'id')),
   'mcp:signOut': (id) => mcp.signOutMcp(str(id, 'id')),
+  'mcp:scanLocal': (includeStopped) => claudeMcp.scanLocalMcps(!!includeStopped),
+  'mcp:importLocal': (id) => claudeMcp.importLocalMcp(str(id, 'id')),
 
   'account:list': () => db().accounts.map(publicAccount),
   'account:setLimitPolicy': (p) => {

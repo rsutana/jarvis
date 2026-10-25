@@ -198,6 +198,9 @@ export function configureMcp(id: string, cfg: McpConfig, secrets: { headers?: Re
 /** Connect, sign in if the server needs it, and replace the tool list (keeping policies you already set). */
 export async function connectMcp(id: string): Promise<Integration> {
   const i = find(id)
+  // e.g. imported from Claude Code, where the value was a ${VAR} it fills from its own environment
+  const empty = i.mcp!.transport === 'stdio' ? [] : (i.mcp!.headers ?? []).filter((h) => !h.set).map((h) => h.name)
+  if (empty.length) throw new Error(`Enter a value for the ${empty.join(', ')} header${empty.length === 1 ? '' : 's'} first.`)
   let authUrl: URL | undefined
   const provider = i.mcp!.transport !== 'stdio' && i.mcp!.oauth !== 'none' ? new Provider(i, (u) => (authUrl = u)) : undefined
   const info = { name: 'Jarvis', version: app.getVersion() }

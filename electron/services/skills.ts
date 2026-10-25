@@ -31,12 +31,34 @@ function wslDistros(includeStopped: boolean): Promise<string[]> {
   )
 }
 
-/** Windows paths compare case-insensitively and with either slash; trailing separators don't matter. */
-const norm = (p: string): string => {
-  const s = resolve(p.trim()).replace(/[\\/]+$/, '')
+/** Windows paths compare case-insensitively and with either slash; trailing separators and \\wsl$ vs \\wsl.localhost don't matter. */
+export const normPath = (p: string): string => {
+  const s = resolve(p.trim().replace(/^[\\/]{2}wsl\$[\\/]/i, '\\\\wsl.localhost\\')).replace(/[\\/]+$/, '')
   return process.platform === 'win32' ? s.replace(/\//g, '\\').toLowerCase() : s
 }
-export const samePath = (a: string, b: string): boolean => norm(a) === norm(b)
+export const samePath = (a: string, b: string): boolean => normPath(a) === normPath(b)
+
+export interface Home {
+  path: string
+  label: string // "This PC" or "WSL Ubuntu · ryscript"
+  wsl?: { distro: string; user: string }
+}
+
+/** This PC's home and every user home in the (running, unless asked) WSL distros. */
+export async function homes(includeStopped: boolean): Promise<Home[]> {
+  const out: Home[] = [{ path: homedir(), label: 'This PC' }]
+  for (const distro of await wslDistros(includeStopped)) {
+    const root = `\\\\wsl.localhost\\${distro}\\home`
+    let users: string[] = []
+    try {
+      users = readdirSync(root)
+    } catch {
+      continue
+    }
+    for (const user of users) out.push({ path: join(root, user), label: `WSL ${distro} · ${user}`, wsl: { distro, user } })
+  }
+  return out
+}
 
 /** The folders found without any setup (this PC + running WSL homes), for telling a custom folder apart. */
 export function isKnownStore(p: string): boolean {
@@ -45,24 +67,10 @@ export function isKnownStore(p: string): boolean {
 
 /** Canonical store first in each home, so a skill linked into ~/.claude/skills resolves to its real folder. */
 async function storeDirs(includeStopped: boolean): Promise<StoreDir[]> {
-  const h = homedir()
-  const out: StoreDir[] = [
-    { path: join(h, '.agents', 'skills'), label: 'This PC · ~/.agents/skills', canonical: true },
-    { path: join(h, '.claude', 'skills'), label: 'This PC · ~/.claude/skills', canonical: false }
-  ]
-  for (const distro of await wslDistros(includeStopped)) {
-    const home = `\\\\wsl.localhost\\${distro}\\home`
-    let users: string[] = []
-    try {
-      users = readdirSync(home)
-    } catch {
-      continue
-    }
-    for (const user of users) {
-      const wsl = { distro, user }
-      out.push({ path: join(home, user, '.agents', 'skills'), label: `WSL ${distro} · ${user} · ~/.agents/skills`, canonical: true, wsl })
-      out.push({ path: join(home, user, '.claude', 'skills'), label: `WSL ${distro} · ${user} · ~/.claude/skills`, canonical: false, wsl })
-    }
+  const out: StoreDir[] = []
+  for (const h of await homes(includeStopped)) {
+    out.push({ path: join(h.path, '.agents', 'skills'), label: `${h.label} · ~/.agents/skills`, canonical: true, ...(h.wsl && { wsl: h.wsl }) })
+    out.push({ path: join(h.path, '.claude', 'skills'), label: `${h.label} · ~/.claude/skills`, canonical: false, ...(h.wsl && { wsl: h.wsl }) })
   }
   for (const p of db().settings.skillDirs ?? []) if (!out.some((d) => samePath(d.path, p))) out.push({ path: p, label: p, canonical: false, custom: true })
   // a canonical store is a valid install target before its first skill: `npx skills add -g` creates it

@@ -97,7 +97,7 @@ export async function resetDb(mode: 'demo' | 'empty'): Promise<void> {
   await low.write()
 }
 
-export function snapshot(): Snapshot {
+export function snapshot(): Omit<Snapshot, 'localMcps'> {
   const d = low.data
   return {
     jarvis: d.jarvis,

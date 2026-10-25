@@ -16,6 +16,7 @@ import type {
   IpcInvoke,
   JarvisConfig,
   LimitPolicy,
+  McpConfig,
   Mission,
   Orchestrator,
   Run,
@@ -55,6 +56,30 @@ export interface SkillStore {
   custom?: boolean // added by the user in Skills
   count: number
   error?: string
+}
+
+/**
+ * An MCP server Claude Code itself is set up with (`claude mcp add`, a project's .mcp.json,
+ * a plugin), found in its config on this PC, in WSL homes and in account config dirs.
+ * Read-only in Jarvis; header and env values never leave the main process.
+ */
+export interface LocalMcp {
+  id: string
+  name: string
+  scope: 'local' | 'project' | 'user' | 'plugin'
+  transport: McpConfig['transport']
+  url?: string // secret-looking query values masked
+  command?: string
+  args?: string[] // secret-looking values masked
+  headerNames: string[]
+  envNames: string[]
+  project?: string // local / project scope (and project-installed plugins): the folder, as Claude Code wrote it
+  plugin?: string // plugin scope, e.g. "github@claude-plugins-official"
+  state: 'enabled' | 'disabled' | 'unapproved' // unapproved: a .mcp.json server Claude Code hasn't been allowed to start yet
+  home: string // "This PC", "WSL Ubuntu · ryscript" or the account whose config dir it's in
+  wsl: boolean
+  file: string // where it's defined
+  workspaceIds: Id[] // Jarvis workspaces whose folder it applies to
 }
 
 export interface DelegationEntry {
@@ -149,6 +174,7 @@ export interface Snapshot {
   limitPolicy: LimitPolicy
   automations: Automation[]
   skills: Skill[]
+  localMcps: LocalMcp[] // read from Claude Code's config, not db.json
   delegation: DelegationEntry[]
   usage: UsageSample[]
   settings: AppSettings
@@ -206,6 +232,10 @@ declare module './types' {
     /** Connect (signing in through the browser when OAuth needs it) and discover the server's tools. */
     'mcp:connect': (id: Id) => Integration
     'mcp:signOut': (id: Id) => Integration
+    /** Re-read Claude Code's MCP servers; includeStopped also boots stopped WSL distros. */
+    'mcp:scanLocal': (includeStopped?: boolean) => LocalMcp[]
+    /** Copy one of Claude Code's servers into Jarvis as a custom MCP (headers encrypted), ready to connect. */
+    'mcp:importLocal': (id: string) => Integration
   }
   interface IpcEvents {
     /** Main changed these collections; stores refetch the snapshot slice. */
