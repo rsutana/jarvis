@@ -495,6 +495,36 @@ function onWall(parent: THREE.Object3D, wall: string, from: number, to: number, 
   return box(parent, inset, from + len / 2, 0.04, len, y1 - y0, y0, color)
 }
 
+/** Most desks the open floor holds (4 × 4) between the lounge, meeting room, break area and kitchen. */
+export const MAX_DESKS = 16
+
+/**
+ * Desk positions for `n` agents: a grid centred on the open floor. Up to 9 it's the
+ * 3 × 3 grid of layout.desks (4.5 m apart), using only the rows and columns needed;
+ * past that, 4 columns 3 m apart. A short last row is centred. Chair and stand keep
+ * their offsets from the desk; mug colour and desk plant come from layout.desks.
+ */
+function deskGrid(n: number): { desk: number[]; chair: number[]; stand: number[]; mug: string; deskPlant: boolean }[] {
+  const count = Math.min(n, MAX_DESKS)
+  if (!count) return []
+  const cols = count <= 3 ? count : count === 4 ? 2 : count <= 9 ? 3 : 4
+  const rows = Math.ceil(count / cols)
+  const sx = cols <= 3 ? 4.5 : 3
+  const sz = rows <= 3 ? 4.5 : 3
+  const [cx, cz] = [12.7, 8.1] // centre of layout.desks
+  const ref = layout.desks[0]
+  const chair = [ref.chair[0] - ref.desk[0], ref.chair[1] - ref.desk[1]]
+  const stand = [ref.stand[0] - ref.desk[0], ref.stand[1] - ref.desk[1]]
+  return Array.from({ length: count }, (_, k) => {
+    const r = Math.floor(k / cols)
+    const inRow = Math.min(cols, count - r * cols)
+    const x = cx + (k % cols - (inRow - 1) / 2) * sx
+    const z = cz + (r - (rows - 1) / 2) * sz
+    const look = layout.desks[k % layout.desks.length]
+    return { desk: [x, z], chair: [x + chair[0], z + chair[1]], stand: [x + stand[0], z + stand[1]], mug: look.mug, deskPlant: look.deskPlant }
+  })
+}
+
 export function buildOffice(input: OfficeInput): World {
   const g = new THREE.Group()
   const labels = new Labels()
@@ -527,14 +557,15 @@ export function buildOffice(input: OfficeInput): World {
     onWall(g, win.wall, win.from, win.to, win.y[0] - 0.06, win.y[0], '#6A7488', 0.05)
   }
 
-  // desks: one per slot; agents sit at their slot facing the monitors (-z); idle agents go on a break
-  const bySlot = new Map(input.agents.filter((a) => a.deskSlot !== undefined).map((a) => [a.deskSlot!, a]))
+  // desks: one per agent, in deskSlot order; agents sit facing the monitors (-z); idle agents go on a break
+  const seated = [...input.agents].sort((a, b) => (a.deskSlot ?? Infinity) - (b.deskSlot ?? Infinity) || a.id.localeCompare(b.id))
   const spots: Record<'coffee' | 'nap', Spot[]> = layout.idleSpots
   const free = { coffee: [...spots.coffee], nap: [...spots.nap] }
   const bz = layout.zones.find((z) => z.id === 'break-area')!.bounds
   const peek = new Map<string, { tag: { hidden?: boolean }; fg: Figure; hover: boolean }>()
-  for (const ds of layout.desks) {
-    const a = bySlot.get(ds.slot)
+  const deskSpots = deskGrid(seated.length)
+  for (const [k, ds] of deskSpots.entries()) {
+    const a = seated[k]
     desk(g, ds.desk[0], ds.desk[1], a?.status === 'working', ds.mug, ds.deskPlant)
     chair(g, ds.chair[0] + 0.95, ds.chair[1])
     if (!a) continue

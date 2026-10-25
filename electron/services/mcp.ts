@@ -14,7 +14,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { UnauthorizedError, type OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
 import type { OAuthClientInformationMixed, OAuthClientMetadata, OAuthTokens } from '@modelcontextprotocol/sdk/shared/auth.js'
 import type { Integration, McpConfig, Policy } from '@shared/types'
-import { MCP_CALLBACK_PORT, MCP_REDIRECT_URL } from '@shared/app-types'
+import { MCP_CALLBACK_PORTS, MCP_REDIRECT_URL, mcpRedirectUrl } from '@shared/app-types'
 import { commit, db, now } from './db'
 
 interface Secret {
@@ -55,15 +55,16 @@ export function publicIntegration({ mcpSecret: _s, ...i }: Integration): Integra
 class Provider implements OAuthClientProvider {
   constructor(
     private i: Integration,
+    private port: number, // the callback port free for this sign-in
     private onAuthUrl: (u: URL) => void
   ) {}
   get redirectUrl(): string {
-    return MCP_REDIRECT_URL
+    return mcpRedirectUrl(this.port)
   }
   get clientMetadata(): OAuthClientMetadata {
     return {
       client_name: 'Jarvis',
-      redirect_uris: [MCP_REDIRECT_URL],
+      redirect_uris: MCP_CALLBACK_PORTS.map(mcpRedirectUrl),
       grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
       token_endpoint_auth_method: 'none' // a desktop app can't keep a secret; PKCE protects the exchange
@@ -78,6 +79,9 @@ class Provider implements OAuthClientProvider {
     const s = readSecret(this.i)
     const c = this.i.mcp!
     if (c.oauth === 'client') return c.clientId ? { client_id: c.clientId, ...(s.clientSecret ? { client_secret: s.clientSecret } : {}) } : undefined
+    // registered for other callback URLs (e.g. before the port moved): register again
+    const uris = s.client && 'redirect_uris' in s.client ? s.client.redirect_uris : undefined
+    if (Array.isArray(uris) && !uris.includes(this.redirectUrl)) return undefined
     return s.client
   }
   saveClientInformation(client: OAuthClientInformationMixed): void {
@@ -106,32 +110,68 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const page = (msg: string) =>
   `<!doctype html><meta charset="utf-8"><title>Jarvis</title><body style="font:16px system-ui;background:#0B0D10;color:#E7ECF5;display:grid;place-items:center;height:100vh;margin:0"><p>${esc(msg)}</p></body>`
 
-/** Listen on the loopback redirect for the authorization code (5 min). Start it before opening the browser. */
-function waitForCode(expectState: () => string | undefined): { code: Promise<string>; close: () => void } {
-  let close = () => undefined as void
-  const code = new Promise<string>((resolve, reject) => {
-    const server = createServer((req, res) => {
-      const u = new URL(req.url ?? '/', MCP_REDIRECT_URL)
-      if (u.pathname !== '/callback') return void res.writeHead(404).end()
-      const c = u.searchParams.get('code')
-      const err = u.searchParams.get('error_description') ?? u.searchParams.get('error')
-      const stateOk = !expectState() || u.searchParams.get('state') === expectState()
-      const ok = !!c && stateOk
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(page(ok ? 'Signed in. You can close this tab and go back to Jarvis.' : `Sign-in failed: ${err ?? 'unexpected response'}`))
-      if (ok) resolve(c!)
-      else reject(new Error(err ? `Sign-in failed: ${err}` : 'Sign-in failed: the response did not match this request'))
-    })
-    const timer = setTimeout(() => reject(new Error('Sign-in timed out after 5 minutes')), 300_000)
-    close = () => {
-      clearTimeout(timer)
-      server.close()
-    }
-    server.on('error', (e: NodeJS.ErrnoException) =>
-      reject(new Error(e.code === 'EADDRINUSE' ? `Port ${MCP_CALLBACK_PORT} is busy, so the sign-in can't come back. Close whatever uses it and try again.` : e.message))
-    )
-    server.listen(MCP_CALLBACK_PORT, '127.0.0.1')
+/** The sign-in currently listening on a callback port; a new sign-in replaces it. */
+let active: { port: number; cancel: () => Promise<void> } | undefined
+
+const canListen = (port: number) =>
+  new Promise<boolean>((ok) => {
+    const s = createServer()
+    s.once('error', () => ok(false))
+    s.listen(port, '127.0.0.1', () => s.close(() => ok(true)))
   })
-  return { code, close: () => close() }
+
+/** The first callback port that's free (or held by an unfinished sign-in of ours, which the new one replaces). */
+async function callbackPort(ports: number[]): Promise<number> {
+  for (const p of ports) if (active?.port === p || (await canListen(p))) return p
+  const which = ports.length === 1 ? `Port ${ports[0]} is` : `Ports ${ports.join(', ')} are all`
+  throw new Error(`${which} taken on this PC, so the sign-in can't come back to Jarvis. Another app is using ${ports.length === 1 ? 'it' : 'them'}, or Windows reserved ${ports.length === 1 ? 'it' : 'them'} (WSL mirrored networking and Hyper-V reserve port ranges).`)
+}
+
+/**
+ * Listen on the loopback redirect for the authorization code (5 min). Resolves once the
+ * port is open, so the browser is only sent there when the code can come back. An
+ * unfinished sign-in (a second Connect click, another integration) is cancelled first.
+ */
+async function waitForCode(port: number, expectState: () => string | undefined): Promise<{ code: Promise<string>; close: () => Promise<void> }> {
+  await active?.cancel()
+  let settle: { resolve: (c: string) => void; reject: (e: Error) => void } | undefined
+  const code = new Promise<string>((resolve, reject) => (settle = { resolve, reject }))
+  code.catch(() => undefined) // a cancel can land before the caller awaits it
+  const server = createServer((req, res) => {
+    const u = new URL(req.url ?? '/', MCP_REDIRECT_URL)
+    if (u.pathname !== '/callback') return void res.writeHead(404).end()
+    const c = u.searchParams.get('code')
+    const err = u.searchParams.get('error_description') ?? u.searchParams.get('error')
+    const stateOk = !expectState() || u.searchParams.get('state') === expectState()
+    const ok = !!c && stateOk
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', Connection: 'close' }).end(page(ok ? 'Signed in. You can close this tab and go back to Jarvis.' : `Sign-in failed: ${err ?? 'unexpected response'}`))
+    if (ok) settle!.resolve(c!)
+    else settle!.reject(new Error(err ? `Sign-in failed: ${err}` : 'Sign-in failed: the response did not match this request. Connect again.'))
+  })
+  let timer: NodeJS.Timeout | undefined
+  const close = () =>
+    new Promise<void>((done) => {
+      clearTimeout(timer)
+      if (active === me) active = undefined
+      server.closeAllConnections()
+      server.close(() => done())
+    })
+  const me = {
+    port,
+    cancel: async () => {
+      settle!.reject(new Error('Replaced by a newer sign-in'))
+      await close()
+    }
+  }
+  await new Promise<void>((ok, fail) => {
+    server.once('error', (e: NodeJS.ErrnoException) =>
+      fail(new Error(e.code === 'EADDRINUSE' ? `Port ${port} was just taken by another app, so the sign-in can't come back. Connect again.` : e.message))
+    )
+    server.listen(port, '127.0.0.1', () => ok())
+  })
+  active = me
+  timer = setTimeout(() => settle!.reject(new Error('Sign-in timed out after 5 minutes')), 300_000)
+  return { code, close }
 }
 
 function transportFor(i: Integration, provider?: OAuthClientProvider) {
@@ -202,7 +242,17 @@ export async function connectMcp(id: string): Promise<Integration> {
   const empty = i.mcp!.transport === 'stdio' ? [] : (i.mcp!.headers ?? []).filter((h) => !h.set).map((h) => h.name)
   if (empty.length) throw new Error(`Enter a value for the ${empty.join(', ')} header${empty.length === 1 ? '' : 's'} first.`)
   let authUrl: URL | undefined
-  const provider = i.mcp!.transport !== 'stdio' && i.mcp!.oauth !== 'none' ? new Provider(i, (u) => (authUrl = u)) : undefined
+  const oauth = i.mcp!.transport !== 'stdio' && i.mcp!.oauth !== 'none'
+  // your own client only has the first URL registered; auto-registered ones list every port
+  const port = oauth
+    ? await callbackPort(i.mcp!.oauth === 'client' ? MCP_CALLBACK_PORTS.slice(0, 1) : MCP_CALLBACK_PORTS).catch((e: Error) => {
+        i.mcp = { ...i.mcp!, testedAt: now(), error: e.message }
+        i.status = 'error'
+        commit('integrations')
+        throw e
+      })
+    : 0
+  const provider = oauth ? new Provider(i, port, (u) => (authUrl = u)) : undefined
   const info = { name: 'Jarvis', version: app.getVersion() }
   let client = new Client(info)
   try {
@@ -211,13 +261,13 @@ export async function connectMcp(id: string): Promise<Integration> {
       await client.connect(transport)
     } catch (e) {
       if (!(e instanceof UnauthorizedError) || !provider || !authUrl) throw e
-      const wait = waitForCode(() => readSecret(i).state)
+      const wait = await waitForCode(port, () => readSecret(i).state)
       try {
         await shell.openExternal(authUrl.href)
         const code = await wait.code
         await (transport as StreamableHTTPClientTransport | SSEClientTransport).finishAuth(code)
       } finally {
-        wait.close()
+        await wait.close()
       }
       await client.close().catch(() => undefined)
       client = new Client(info)

@@ -196,7 +196,7 @@ async function finish(): Promise<void> {
             <span class="chip">{{ a.workspaceId ? (a.workspaceId === editId ? 'Here' : data.workspace(a.workspaceId)?.name) : 'In pool' }}</span>
           </label>
         </div>
-        <p class="m-0 text-xs text-ink-faint">Agents from another workspace move here. Each office has 9 desks.</p>
+        <p class="m-0 text-xs text-ink-faint">Agents from another workspace move here. The office gets a desk for each agent, up to 16.</p>
         <RouterLink class="btn self-start" to="/agents/new">+ Create a new agent</RouterLink>
       </template>
     </div>

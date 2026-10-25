@@ -66,8 +66,10 @@ function upsertAgent(a: AnyAgent): AnyAgent {
 
 function freeDesk(workspaceId: string): number | undefined {
   const used = new Set(db().agents.filter((x) => x.workspaceId === workspaceId && x.deskSlot !== undefined).map((x) => x.deskSlot))
-  for (let i = 0; i < 9; i++) if (!used.has(i)) return i
-  return undefined
+  // just an order: the office draws one desk per agent, in deskSlot order
+  let i = 0
+  while (used.has(i)) i++
+  return i
 }
 
 const handlers: Handlers = {
