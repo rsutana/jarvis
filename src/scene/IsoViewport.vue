@@ -10,6 +10,7 @@ import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js'
 import { IsoCamera } from './camera'
 import { buildLobby } from './LobbyWorld'
 import { buildOffice } from './OfficeWorld'
+import { ROOF } from './colors'
 import type { World } from './world'
 import type { Pick } from './build'
 import Icon from '@/components/Icon.vue'
@@ -63,7 +64,6 @@ const signature = computed(() => {
   ])
 })
 
-const ROOF: Record<string, string> = { teal: '#34B394', blue: '#4A7FE0', clay: '#D7655A', purple: '#8A6FE0', amber: '#E0A33A' }
 const go = (to: string) => router.push(to)
 
 function build(): void {
@@ -130,9 +130,15 @@ function shiftFor(): number {
   return Math.round(w * (lobbyHome ? 0.48 : 0.41))
 }
 
+// labels drop their sub line when zoomed out (WorldLabel › in-[.labels-compact])
+let compact = false
 function loop(): void {
   raf = requestAnimationFrame(loop)
   const moving = iso.step()
+  if (compact !== iso.zoom < 0.5) {
+    compact = !compact
+    labelRenderer.domElement.classList.toggle('labels-compact', compact)
+  }
   timer.update()
   const animating = world?.animate(timer.getElapsed()) ?? false
   if (dirty || moving || animating) {
@@ -230,8 +236,8 @@ onMounted(() => {
   sun.castShadow = true
   sun.shadow.mapSize.set(2048, 2048)
   const sc = sun.shadow.camera
-  sc.left = -30
-  sc.right = 30
+  sc.left = -35
+  sc.right = 35
   sc.top = 30
   sc.bottom = -30
   sc.far = 120

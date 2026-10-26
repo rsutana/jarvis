@@ -6,7 +6,7 @@
  * Jarvis to fix, a couple of times at most.
  */
 import { app } from 'electron'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import type { ChatMessage } from '@shared/types'
 import type { ChatAttachment, ChatUpload, Conversation } from '@shared/app-types'
@@ -33,6 +33,19 @@ export function newConversation(title = 'New chat'): Conversation {
   db().conversations.unshift(c)
   commit('conversations')
   return c
+}
+
+/** Drop chats with their messages and uploaded files; a chat Jarvis is still answering stays. Returns how many went. */
+export function deleteConversations(ids: string[]): number {
+  const want = new Set(ids)
+  if ([...want].every((id) => busy.has(id))) throw new Error('Jarvis is still answering in that chat')
+  const gone = new Set(db().conversations.filter((c) => want.has(c.id) && !busy.has(c.id)).map((c) => c.id))
+  if (!gone.size) return 0
+  db().conversations = db().conversations.filter((c) => !gone.has(c.id))
+  db().messages = db().messages.filter((m) => !gone.has(m.conversationId))
+  for (const id of gone) rmSync(join(cwd(), 'attachments', id), { recursive: true, force: true })
+  commit('conversations')
+  return gone.size
 }
 
 function addMessage(m: Omit<ChatMessage, 'id' | 'createdAt'>): ChatMessage {

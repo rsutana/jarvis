@@ -8,6 +8,9 @@ defineProps<{
   dot?: string // status colour class, e.g. bg-status-working
   accent?: boolean
   selected?: boolean
+  highlight?: boolean // pointer is over the thing this label names
+  color?: string // swatch stripe, e.g. a workspace's roof colour
+  meter?: number // 0–1 bar under the sub line, e.g. share of agents working
   badge?: string
   kind?: 'tag' | 'bubble' | 'cta'
   bubbleClass?: string
@@ -31,12 +34,15 @@ defineProps<{
     v-else
     :type="onClick ? 'button' : undefined"
     :aria-pressed="onClick && selected !== undefined ? selected : undefined"
-    class="flex max-w-[240px] flex-col items-start rounded-row border bg-tag px-2.5 py-1 text-left whitespace-nowrap shadow-tag"
+    class="flex max-w-[240px] flex-col items-start rounded-row border bg-tag px-2.5 py-1 text-left whitespace-nowrap shadow-tag transition-[border-color,translate] duration-150"
     :class="[
       hidden ? 'invisible' : '',
       onClick ? 'pointer-events-auto cursor-pointer hover:border-accent' : 'pointer-events-none',
-      selected ? 'border-accent' : accent ? 'border-status-working/60' : 'border-line-strong'
+      selected || highlight ? 'border-accent' : accent ? 'border-status-working/60' : 'border-line-strong',
+      highlight ? '-translate-y-0.5' : '',
+      color ? 'border-l-[3px]' : ''
     ]"
+    :style="color && !selected && !highlight ? { borderLeftColor: color } : undefined"
     @click.stop="onClick?.()"
     @pointerdown.stop
   >
@@ -47,7 +53,10 @@ defineProps<{
           <span v-if="dot" class="dot" :class="dot" aria-hidden="true" />{{ title }}
           <span v-if="badge" class="rounded bg-status-review px-1 text-[10px] font-bold text-app">{{ badge }}</span>
         </span>
-        <span v-if="sub" class="max-w-[220px] truncate font-sans text-[11px] text-ink-faint">{{ sub }}</span>
+        <span v-if="sub" class="max-w-[220px] truncate font-sans text-[11px] text-ink-faint in-[.labels-compact]:hidden">{{ sub }}</span>
+        <span v-if="meter !== undefined" class="mt-1 mb-0.5 block h-[3px] w-full min-w-[96px] overflow-hidden rounded-full bg-line-strong in-[.labels-compact]:hidden" aria-hidden="true">
+          <span class="block h-full rounded-full bg-status-working transition-[width] duration-500" :style="{ width: `${Math.round(Math.min(1, Math.max(0, meter)) * 100)}%` }" />
+        </span>
       </span>
     </span>
   </component>

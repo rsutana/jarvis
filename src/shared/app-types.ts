@@ -41,6 +41,8 @@ export interface ChatAttachment {
   path: string
 }
 export const CHAT_UPLOAD_LIMITS = { files: 10, bytes: 20 * 1024 * 1024 }
+/** Buildings the lobby campus has plots for (lobby-layout.json › maxWorkspaces). */
+export const MAX_WORKSPACES = 6
 
 export interface Conversation {
   id: Id
@@ -218,6 +220,8 @@ declare module './types' {
     'jarvis:setConfig': (c: Partial<JarvisConfig>) => JarvisConfig
     'jarvis:messages': (conversationId: Id) => ChatMessage[]
     'jarvis:newConversation': (title?: string) => Conversation
+    /** delete chats + their messages and uploads; returns how many were removed */
+    'jarvis:deleteConversations': (ids: Id[]) => number
     'jarvis:setAway': (away: boolean) => void
     'workspace:update': (id: Id, patch: Partial<Workspace>) => Workspace
     'workspace:createFull': (input: NewWorkspaceInput) => Workspace

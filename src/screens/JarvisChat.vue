@@ -6,6 +6,7 @@ import DrawerPanel from '@/shell/DrawerPanel.vue'
 import ChatThread from '@/components/ChatThread.vue'
 import Composer from '@/components/Composer.vue'
 import Avatar from '@/components/Avatar.vue'
+import ChatManager from '@/components/ChatManager.vue'
 import { useData } from '@/stores/data'
 import { useUi } from '@/stores/ui'
 import { invoke } from '@/lib/ipc'
@@ -16,7 +17,7 @@ const router = useRouter()
 const data = useData()
 const ui = useUi()
 const cid = computed(() => route.params.conversationId as string | undefined)
-const { conversations, current, messages, typing, send, create } = useConversation(cid)
+const { conversations, current, messages, typing, send, create, remove } = useConversation(cid)
 const composer = ref<InstanceType<typeof Composer>>()
 const jarvis = computed(() => data.snap!.jarvis)
 
@@ -48,6 +49,10 @@ async function newChat(): Promise<void> {
   const id = await create()
   if (id) router.replace(`/jarvis/${id}`)
 }
+async function removeChats(ids: string[]): Promise<void> {
+  // the open chat went: show the most recent one left
+  if ((await remove(ids)) && current.value && ids.includes(current.value.id)) router.replace('/jarvis')
+}
 const approve = () => mission.value && ui.act(() => invoke('mission:approve', mission.value!.id), mission.value.schedule ? 'Approved and scheduled' : 'Mission approved')
 const runOnce = () => mission.value && ui.act(() => invoke('mission:runOnce', mission.value!.id), 'Running once')
 </script>
@@ -62,6 +67,7 @@ const runOnce = () => mission.value && ui.act(() => invoke('mission:runOnce', mi
         <option v-for="c in conversations" :key="c.id" :value="c.id">{{ c.title }}</option>
       </select>
       <button class="btn btn-sm" type="button" @click="newChat">+ New chat</button>
+      <ChatManager :conversations="conversations" :current-id="current?.id" :busy="data.typing" @pick="pickConv" @remove="removeChats" />
       <div class="flex-1" />
       <span class="chip mono">{{ jarvis.model }} · {{ jarvis.thinking }}</span>
     </template>

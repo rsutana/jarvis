@@ -33,5 +33,13 @@ export function useConversation(id: Ref<string | undefined>) {
     if (c) data.messages[c.id] = []
     return c?.id
   }
-  return { conversations, current, messages, typing, send, create }
+  /** Delete chats (a chat Jarvis is answering is kept); returns how many went. */
+  async function remove(ids: string[]): Promise<number> {
+    const n = await ui.act(() => invoke('jarvis:deleteConversations', ids))
+    if (!n) return 0
+    for (const cid of ids) if (!data.typing[cid]) delete data.messages[cid]
+    ui.toast(n === 1 ? 'Chat deleted' : `${n} chats deleted`, 'good')
+    return n
+  }
+  return { conversations, current, messages, typing, send, create, remove }
 }

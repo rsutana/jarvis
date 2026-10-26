@@ -2,12 +2,13 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Agent, Orchestrator, Repo, RepoStatus, Workspace } from '@shared/types'
-import { MODELS, isConnected } from '@shared/app-types'
+import { MAX_WORKSPACES, MODELS, isConnected } from '@shared/app-types'
 import DrawerPanel from '@/shell/DrawerPanel.vue'
 import Avatar from '@/components/Avatar.vue'
 import { useData } from '@/stores/data'
 import { useUi } from '@/stores/ui'
 import { invoke } from '@/lib/ipc'
+import { ROOF } from '@/scene/colors'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,7 +20,10 @@ const orch = computed(() => data.orchestratorOf(editId.value) as Orchestrator | 
 
 const step = ref(0)
 const names = ['Basics', 'Folder & Git', 'Orchestrator', 'Team']
-const COLORS: [Workspace['color'], string, string][] = [['clay', 'Clay', '#D7655A'], ['blue', 'Blue', '#4A7FE0'], ['teal', 'Green', '#34B394'], ['purple', 'Purple', '#8A6FE0'], ['amber', 'Amber', '#E0A33A']]
+const COLORS = (([['clay', 'Clay'], ['blue', 'Blue'], ['teal', 'Green'], ['purple', 'Purple'], ['amber', 'Amber']]) as [Workspace['color'], string][]).map(([c, n]) => [c, n, ROOF[c]] as const)
+/** plots left on the lobby campus; a new workspace needs one */
+const plotsLeft = computed(() => MAX_WORKSPACES - data.workspaces.length)
+const full = computed(() => !existing.value && plotsLeft.value <= 0)
 const anthropic = computed(() => data.snap?.accounts.find((a) => a.provider === 'anthropic' && isConnected(a))?.id ?? '')
 
 const f = reactive({
@@ -129,6 +133,10 @@ async function finish(): Promise<void> {
       </button>
     </nav>
     <div class="flex flex-1 flex-col gap-[18px] overflow-auto px-[26px] py-[22px]">
+      <div v-if="full" role="status" class="card flex items-start gap-3 border-status-review/50 px-3.5 py-3 text-[13px]">
+        <span class="dot mt-1.5 bg-status-review" aria-hidden="true" />
+        <span><b class="font-semibold">The campus is full.</b> <span class="text-ink-muted">The lobby has room for {{ MAX_WORKSPACES }} workspaces, and all {{ MAX_WORKSPACES }} plots are taken.</span></span>
+      </div>
       <template v-if="step === 0">
         <div><label class="field-label" for="wn">Workspace name</label><input id="wn" v-model="f.name" class="field" placeholder="e.g. Alumni website" /></div>
         <div><label class="field-label" for="wg">Goal (Jarvis and the orchestrator read this)</label><textarea id="wg" v-model="f.goal" class="field" rows="4" /></div>
@@ -137,7 +145,7 @@ async function finish(): Promise<void> {
           <div class="flex gap-2.5" role="radiogroup" aria-label="Building colour">
             <button v-for="[c, n, hex] in COLORS" :key="c" type="button" role="radio" :aria-checked="f.color === c" :aria-label="n" class="size-9 cursor-pointer rounded-[9px] border-2" :class="f.color === c ? 'border-ink' : 'border-transparent'" :style="{ background: hex }" @click="f.color = c" />
           </div>
-          <div class="mt-1.5 text-xs text-ink-faint">{{ existing ? 'Changes the roof and office trim.' : 'The new building appears on the empty plot in the lobby.' }}</div>
+          <div class="mt-1.5 text-xs text-ink-faint">{{ existing ? 'Changes the roof and office trim.' : full ? 'No free plot in the lobby.' : `The new building appears on the next free plot in the lobby (${plotsLeft} of ${MAX_WORKSPACES} left).` }}</div>
         </div>
       </template>
       <template v-else-if="step === 1">
@@ -205,7 +213,7 @@ async function finish(): Promise<void> {
       <div class="flex-1" />
       <button v-if="existing" class="btn" type="button" :disabled="busy" @click="finish">Save</button>
       <button v-if="step < 3" class="btn btn-pri" type="button" :disabled="!existing && !canNext" @click="step++">Continue</button>
-      <button v-else-if="!existing" class="btn btn-pri" type="button" :disabled="busy || !f.name || !f.folderPath || !f.oName" @click="finish">Create workspace</button>
+      <button v-else-if="!existing" class="btn btn-pri" type="button" :disabled="busy || full || !f.name || !f.folderPath || !f.oName" @click="finish">Create workspace</button>
     </div>
   </DrawerPanel>
 </template>

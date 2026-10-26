@@ -1,7 +1,7 @@
 import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { existsSync } from 'node:fs'
 import type { Agent, IpcInvoke, Orchestrator, Workspace } from '@shared/types'
-import { CHAT_UPLOAD_LIMITS, type AnyAgent, type ChatUpload, type NewWorkspaceInput, type StoredAccount, type StoredTask } from '@shared/app-types'
+import { CHAT_UPLOAD_LIMITS, MAX_WORKSPACES, type AnyAgent, type ChatUpload, type NewWorkspaceInput, type StoredAccount, type StoredTask } from '@shared/app-types'
 import { commit, db, findAgent, findTask, findWorkspace, nextTaskId, now, resetDb, snapshot, uid } from './services/db'
 import * as git from './services/git'
 import * as runner from './services/runner'
@@ -40,22 +40,22 @@ const obj = <T>(v: unknown, name: string): T => {
   return v as T
 }
 
-/** Free lobby plot for a new building (lobby-layout.json › workspaceSlots, then extend along +x). */
+/** Free lobby plot for a new building (lobby-layout.json › workspaceSlots); the campus holds MAX_WORKSPACES. */
 function freePlot(): Workspace['lobbyPlot'] {
   const slots = [
     { x: 13, z: 2, w: 6, d: 5 },
     { x: 2, z: 2, w: 5, d: 4 },
     { x: 2, z: 13, w: 5, d: 4 },
-    { x: 13, z: 13, w: 5, d: 4 }
+    { x: 13, z: 13, w: 5, d: 4 },
+    { x: 22, z: 2, w: 6, d: 5 },
+    { x: 22, z: 13, w: 6, d: 5 }
   ]
+  const full = new Error(`The campus has room for ${MAX_WORKSPACES} workspaces. Remove one to add another.`)
+  if (db().workspaces.length >= MAX_WORKSPACES) throw full
   const used = db().workspaces.map((w) => `${w.lobbyPlot.x},${w.lobbyPlot.z}`)
-  for (let ring = 0; ring < 20; ring++) {
-    for (const s of slots) {
-      const p = { ...s, x: s.x + ring * 20 }
-      if (!used.includes(`${p.x},${p.z}`)) return p
-    }
-  }
-  return slots[0]
+  const free = slots.find((s) => !used.includes(`${s.x},${s.z}`))
+  if (!free) throw full
+  return free
 }
 
 function upsertAgent(a: AnyAgent): AnyAgent {
@@ -121,6 +121,10 @@ const handlers: Handlers = {
   },
   'jarvis:messages': (id) => jarvis.messages(str(id, 'conversationId')),
   'jarvis:newConversation': (title) => jarvis.newConversation(title),
+  'jarvis:deleteConversations': (ids) => {
+    if (!Array.isArray(ids) || !ids.length) throw new Error('ids must be a non-empty list')
+    return jarvis.deleteConversations(ids.map((id) => str(id, 'conversationId')))
+  },
   'jarvis:setAway': (away) => {
     db().jarvis.awayMode = !!away
     db().awaySince = away ? now() : undefined
@@ -136,6 +140,8 @@ const handlers: Handlers = {
   },
   'workspace:createFull': (input: NewWorkspaceInput) => {
     obj(input, 'input')
+    // before anything is built, so a full campus rejects cleanly
+    const lobbyPlot = freePlot()
     const id = uid('ws-')
     const orchId = uid('or-')
     const o: Orchestrator = {
@@ -170,7 +176,7 @@ const handlers: Handlers = {
       git: input.git,
       orchestratorId: orchId,
       agentIds: [],
-      lobbyPlot: freePlot()
+      lobbyPlot
     }
     db().workspaces.push(ws)
     db().agents.push(o)
@@ -386,6 +392,9 @@ const handlers: Handlers = {
     const users = [db().jarvis.accountId === a.id ? 'Jarvis' : '', ...db().agents.filter((x) => x.accountId === a.id).map((x) => x.name)].filter(Boolean)
     if (users.length) throw new Error(`${a.name} is used by ${users.join(', ')}. Move them to another account first.`)
     db().accounts = db().accounts.filter((x) => x.id !== a.id)
+    // "move back" would point agents at an account that no longer exists
+    const mv = db().movedAgents
+    if (mv && (mv.from === a.id || mv.to === a.id)) db().movedAgents = undefined
     commit('accounts')
   },
   'account:moveBack': () => moveBack(),
