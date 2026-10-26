@@ -164,15 +164,18 @@ function arc(pts: P[], c: P, r: number, a0: number, a1: number): void {
 
 /**
  * One road as a loop, in (along, across) space: out in one lane, around the plaza
- * keeping it on the left, U-turn at the far turnaround, back in the other lane.
+ * keeping it on the left, U-turn at the far end, back in the other lane.
+ * `turns` are the U-turn radii at each end: the lane offset for a tight turnaround,
+ * or larger to circle something (Jarvis's plaza) before heading back.
  */
-function roadLoop(end0: number, end1: number, mid: number, plaza: number, ring: number, lane: number): P[] {
+function roadLoop(end0: number, end1: number, mid: number, plaza: number, ring: number, lane: number, turns: [number, number] = [lane, lane]): P[] {
   const phi = Math.asin(lane / ring)
+  const [t0, t1] = turns.map((r) => Math.asin(lane / r))
   const pts: P[] = []
   arc(pts, [plaza, mid], ring, Math.PI - phi, phi)
-  arc(pts, [end1, mid], lane, Math.PI / 2, -Math.PI / 2)
+  arc(pts, [end1, mid], turns[1], Math.PI - t1, -(Math.PI - t1))
   arc(pts, [plaza, mid], ring, -phi, -(Math.PI - phi))
-  arc(pts, [end0, mid], lane, -Math.PI / 2, -1.5 * Math.PI)
+  arc(pts, [end0, mid], turns[0], -t0, -(2 * Math.PI - t0))
   pts.push(pts[0])
   return pts
 }
@@ -216,8 +219,12 @@ export function buildLobby(input: LobbyInput): World {
   checker(g, W, D, layout.ground.grass, 0.001)
 
   const [px, pz] = layout.plaza.center
+  const jp = layout.jarvisPortal
+  // Jarvis stands at the south end of road-z: nothing on campus sits between it and the camera
+  const [jx, jz] = jp.position
   const turnR = layout.markings.turnaroundRadius
-  const ends: P[] = [[turnR + 0.05, pz], [W - turnR - 0.05, pz], [px, turnR + 0.05], [px, D - turnR - 0.05]]
+  // turnarounds: both ends of road-x, the north end of road-z (its south end is Jarvis's plaza)
+  const ends: P[] = [[turnR + 0.05, pz], [W - turnR - 0.05, pz], [px, turnR + 0.05]]
   for (const r of layout.roads) {
     plotBox(g, r.plot, 0.04, 0.002, r.paving[0])
     // curbs along the long sides
@@ -241,7 +248,7 @@ export function buildLobby(input: LobbyInput): World {
     for (let s = from; s + 0.5 <= to; s += 1) put(s + 0.25)
   }
   for (const [a, b] of [[2 * turnR + 0.3, px - cross - 0.6], [px + cross + 0.6, W - 2 * turnR - 0.3]]) dashes(a, b, (s) => paint(g, s, pz, 0.5, 0.08, 0.043))
-  for (const [a, b] of [[2 * turnR + 0.3, pz - cross - 0.6], [pz + cross + 0.6, D - 2 * turnR - 0.3]]) dashes(a, b, (s) => paint(g, px, s, 0.08, 0.5, 0.043))
+  for (const [a, b] of [[2 * turnR + 0.3, pz - cross - 0.6], [pz + cross + 0.6, jz - jp.plazaRadius - 0.3]]) dashes(a, b, (s) => paint(g, px, s, 0.08, 0.5, 0.043))
   // zebra crosswalks on the four plaza approaches
   const cw = layout.markings.crosswalks
   for (const sgn of [-1, 1])
@@ -250,16 +257,30 @@ export function buildLobby(input: LobbyInput): World {
       paint(g, px + k * 0.32, pz + sgn * cross, 0.16, cw, 0.043)
     }
 
-  // plaza + Jarvis portal
+  // roundabout with a fountain on the island
   cyl(g, px, pz, layout.plaza.radius, 0.06, 0.03, layout.plaza.color)
   torus(g, px, 0.1, pz, layout.plaza.radius, 0.06, layout.plaza.ring)
+  cyl(g, px, pz, 1.15, 0.3, 0.06, '#C9CED6')
+  const water = new THREE.MeshStandardMaterial({ color: '#4FA3E0', emissive: '#2A6FB0', emissiveIntensity: 0.25, roughness: 0.15 })
+  cyl(g, px, pz, 1.0, 0.04, 0.33, water)
+  cyl(g, px, pz, 0.16, 0.85, 0.36, '#C9CED6')
+  cyl(g, px, pz, 0.45, 0.08, 1.2, '#C9CED6')
+  const spray = sphere(g, px, 1.42, pz, 0.2, mat('#BFE3FF', { emissive: '#7FC4FF', emissiveIntensity: 0.4, opacity: 0.75 }))
+  spray.castShadow = false
+  animated.push((t) => {
+    spray.scale.y = 0.4 * (1 + 0.15 * Math.sin(t * 5))
+    water.emissiveIntensity = 0.22 + 0.06 * Math.sin(t * 2.4)
+  })
+
+  // Jarvis's own plaza + portal
+  cyl(g, jx, jz, jp.plazaRadius, 0.06, 0.03, layout.plaza.color)
+  torus(g, jx, 0.1, jz, jp.plazaRadius, 0.06, layout.plaza.ring)
   const portal = new THREE.Group()
-  const jp = layout.jarvisPortal
-  cyl(portal, px, pz, jp.radius * 0.8, jp.pedestalHeight, 0.06, '#2B3646')
+  cyl(portal, jx, jz, jp.radius * 0.8, jp.pedestalHeight, 0.06, '#2B3646')
   const coreMat = new THREE.MeshStandardMaterial({ color: jp.colors.core, emissive: jp.colors.core, emissiveIntensity: 0.8, roughness: 0.4 })
-  sphere(portal, px, 1.4, pz, 0.45, coreMat)
-  const ring = torus(portal, px, 1.4, pz, jp.radius * 0.7, 0.06, mat(jp.colors.ring, { emissive: jp.colors.ring, emissiveIntensity: 0.9 }))
-  const beam = cyl(portal, px, pz, 0.25, jp.beamHeight, 0.36, mat(jp.colors.core, { emissive: jp.colors.core, emissiveIntensity: 0.6, opacity: 0.25 }))
+  sphere(portal, jx, 1.4, jz, 0.45, coreMat)
+  const ring = torus(portal, jx, 1.4, jz, jp.radius * 0.7, 0.06, mat(jp.colors.ring, { emissive: jp.colors.ring, emissiveIntensity: 0.9 }))
+  const beam = cyl(portal, jx, jz, 0.25, jp.beamHeight, 0.36, mat(jp.colors.core, { emissive: jp.colors.core, emissiveIntensity: 0.6, opacity: 0.25 }))
   beam.castShadow = false
   pickable(portal, { kind: 'route', to: jp.route })
   g.add(portal)
@@ -338,7 +359,7 @@ export function buildLobby(input: LobbyInput): World {
     for (const c of pk.parked) car(g, c.color, wheelGeo).group.position.set(x + (c.bay + 0.5) * bay, 0.032, z + d / 2)
   }
 
-  // traffic: loops on both roads, around the plaza, U-turns at the turnarounds
+  // traffic: loops on both roads, around the roundabout, U-turns at the turnarounds and around Jarvis
   const lane = layout.traffic.lanes.offset
   const rr = layout.traffic.lanes.roundaboutRadius
   const rx = layout.roads.find((r) => r.id === 'road-x')!.plot
@@ -346,9 +367,10 @@ export function buildLobby(input: LobbyInput): World {
   const tracks = {
     x: new Track(roadLoop(ends[0][0], ends[1][0], rx[1] + rx[3] / 2, px, rr.x, lane)),
     // same loop with axes swapped; reversed so cars still keep right
-    z: new Track(roadLoop(ends[2][1], ends[3][1], rz[0] + rz[2] / 2, pz, rr.z, lane).map(([a, c]): P => [c, a]).reverse())
+    z: new Track(roadLoop(ends[2][1], jz, rz[0] + rz[2] / 2, pz, rr.z, lane, [lane, layout.traffic.lanes.jarvisRadius]).map(([a, c]): P => [c, a]).reverse())
   }
-  const raised = (x: number, z: number) => Math.hypot(x - px, z - pz) < layout.plaza.radius || ends.some(([ex, ez]) => Math.hypot(x - ex, z - ez) < turnR)
+  const raised = (x: number, z: number) =>
+    Math.hypot(x - px, z - pz) < layout.plaza.radius || Math.hypot(x - jx, z - jz) < jp.plazaRadius || ends.some(([ex, ez]) => Math.hypot(x - ex, z - ez) < turnR)
   const traffic = layout.traffic.cars.map((c) => ({ ...c, track: tracks[c.track as 'x' | 'z'], ...car(g, c.color, wheelGeo) }))
   animated.push((t) => {
     for (const c of traffic) {
