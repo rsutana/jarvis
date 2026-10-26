@@ -1,4 +1,5 @@
 import { computed, watch, type Ref } from 'vue'
+import type { ChatUpload } from '@shared/app-types'
 import { useData } from '@/stores/data'
 import { useUi } from '@/stores/ui'
 import { invoke } from '@/lib/ipc'
@@ -20,12 +21,12 @@ export function useConversation(id: Ref<string | undefined>) {
     { immediate: true }
   )
 
-  async function send(text: string): Promise<void> {
+  async function send(text: string, files: ChatUpload[] = []): Promise<void> {
     let cid: string | undefined = current.value?.id
     if (!cid) cid = (await ui.act(() => invoke('jarvis:newConversation')))?.id
     if (!cid) return
     if (!data.messages[cid]) await data.loadMessages(cid)
-    await ui.act(() => invoke('jarvis:send', cid!, text))
+    await ui.act(() => (files.length ? invoke('jarvis:sendWithFiles', cid!, text, files) : invoke('jarvis:send', cid!, text)))
   }
   async function create(): Promise<string | undefined> {
     const c = await ui.act(() => invoke('jarvis:newConversation'))

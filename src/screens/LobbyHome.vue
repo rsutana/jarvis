@@ -75,7 +75,7 @@ const stat = 'flex min-h-control items-center justify-between border-b border-li
       <button v-for="s in suggestions" :key="s" class="chip min-h-8 cursor-pointer hover:border-accent" type="button" @click="suggest(s)">{{ s }}</button>
     </div>
     <div class="border-t border-line-soft px-4 pt-2.5 pb-4">
-      <Composer id="jmsg" ref="composer" placeholder="Message Jarvis…" :disabled="typing" @send="send" />
+      <Composer id="jmsg" ref="composer" placeholder="Message Jarvis… (paste or drop files)" :disabled="typing" @send="send" />
     </div>
   </DrawerPanel>
   <button v-else type="button" class="pointer-events-auto absolute top-drawer-top right-hud z-20 btn btn-pri" @click="open = true">Open Jarvis</button>

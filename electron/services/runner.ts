@@ -260,10 +260,25 @@ async function finish(task: StoredTask, agent: AnyAgent, run: StoredRun): Promis
       change.qaNote = report.replace(/[\s\S]*QA:\s*(PASS|FAIL)\s*/i, '').trim().slice(0, 600) || report.slice(-600)
     }
     log(ws.id, `${agent.name}: QA ${pass ? 'passed' : 'failed'} on ${task.qaOf}.`, pass ? 'good' : 'bad')
+    setAgent(agent, 'idle')
+    // a failed QA sends the work back to its author with the notes, then QA runs again
+    const dev = !pass && change?.taskId ? db().tasks.find((t) => t.id === change.taskId) : undefined
+    const max = db().settings.qaRetries ?? 2
+    if (dev && change && (dev.qaAttempts ?? 0) < max) {
+      dev.qaAttempts = (dev.qaAttempts ?? 0) + 1
+      const tries = `try ${dev.qaAttempts}/${max}`
+      change.qa = 'pending'
+      task.status = 'todo'
+      task.note = `Waiting for fix (${tries})`
+      log(ws.id, `Sent ${dev.id} back to ${findAgent(dev.assigneeId)?.name ?? dev.assigneeId} with the QA notes (${tries}).`)
+      commit('tasks', 'changes', 'runs')
+      requestChanges(dev.id, `QA feedback (${tries}): ${change.qaNote}`)
+      return
+    }
+    if (dev) log(ws.id, `QA failed on ${task.qaOf} after ${max} tries.`, 'bad')
     task.status = 'done'
     task.doneAt = now()
     task.note = pass ? 'QA passed' : 'QA failed'
-    setAgent(agent, 'idle')
     commit('tasks', 'changes', 'runs')
     if (pass && change && ws.git.mergePolicy === 'auto_with_revert') {
       await mergeBranch(ws.id, change.branch).catch((e) => toast(String(e.message ?? e), 'bad'))
@@ -319,7 +334,22 @@ async function finish(task: StoredTask, agent: AnyAgent, run: StoredRun): Promis
   }
   setAgent(agent, task.status === 'review' ? 'review' : 'idle')
   commit('tasks', 'changes', 'runs')
+  // a QA task outside a mission waiting on this fix; missions re-run theirs from schedule()
+  const qa = db().tasks.find((t) => t.qaOf === run.branch && t.status === 'todo' && !t.missionId)
+  if (qa && task.status === 'review') startTask(qa.id).catch((e) => toast(`${qa.id}: ${(e as Error).message}`, 'bad'))
   onFinished(task)
+}
+
+/** Reopen a task with notes added to its details. Mission tasks restart through the scheduler. */
+export function requestChanges(taskId: string, note: string): void {
+  const t = db().tasks.find((x) => x.id === taskId)
+  if (!t) throw new Error('Task not found')
+  if (isRunning(t.id)) throw new Error(`${t.id} is still running`)
+  t.description = `${t.description ?? t.title}\n\nRequested changes: ${note}`
+  t.status = 'todo'
+  commit('tasks')
+  if (db().missions.find((m) => m.id === t.missionId)?.status === 'running') onFinished(t)
+  else startTask(t.id).catch((e) => toast(`${t.id}: ${(e as Error).message}`, 'bad'))
 }
 
 export function steer(runId: string, text: string): void {

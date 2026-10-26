@@ -5,6 +5,7 @@ import type { Orchestrator } from '@shared/types'
 import DrawerPanel from '@/shell/DrawerPanel.vue'
 import Avatar from '@/components/Avatar.vue'
 import Icon from '@/components/Icon.vue'
+import MissionGraph, { type GraphNode } from '@/components/MissionGraph.vue'
 import { useData } from '@/stores/data'
 import { useUi } from '@/stores/ui'
 import { invoke } from '@/lib/ipc'
@@ -32,24 +33,32 @@ const ST: Record<string, [string, string]> = {
   blocked: ['Blocked', 'bg-status-blocked text-status-blocked'],
   planned: ['Planned', 'bg-status-idle text-ink-faint']
 }
-const lanes = computed(() => {
+const nodes = computed(() => {
   const m = mission.value
   if (!m) return []
-  const buckets: Record<string, Node[]> = { Research: [], Build: [], QA: [], Approve: [] }
-  m.steps.forEach((s) => {
+  return m.steps.map((s) => {
     const t = s.taskId ? data.task(s.taskId) : undefined
     const a = data.agent(s.assigneeId)
     const role = a?.role ?? ''
     const lane = s.gate ? 'Approve' : /qa|test/i.test(role) ? 'QA' : /research|market/i.test(role) ? 'Research' : 'Build'
     const st = t?.status ?? 'planned'
-    buckets[lane].push({
+    const deps = t?.dependsOn ?? s.dependsOn ?? []
+    return {
+      lane,
       id: t?.id ?? '—', title: s.title, who: data.nameOf(s.assigneeId), color: a?.look.color, st: ST[st][0], tone: ST[st][1],
-      ring: st === 'in_progress', dep: (t?.dependsOn ?? s.dependsOn ?? []).length ? '← ' + (t?.dependsOn ?? s.dependsOn ?? []).join(', ') : '',
-      to: t ? `/w/${id.value}/tasks/${t.id}` : undefined
-    })
+      ring: st === 'in_progress', dep: deps.length ? '← ' + deps.join(', ') : '',
+      to: t ? `/w/${id.value}/tasks/${t.id}` : undefined,
+      // deps are step indexes before approval and task ids after
+      deps: deps.map((d) => (/^\d+$/.test(d) ? Number(d) : m.steps.findIndex((x) => x.taskId === d))).filter((i) => i >= 0)
+    } satisfies Node & GraphNode & { lane: string }
   })
+})
+const lanes = computed(() => {
+  const buckets: Record<string, Node[]> = { Research: [], Build: [], QA: [], Approve: [] }
+  for (const n of nodes.value) buckets[n.lane].push(n)
   return Object.entries(buckets).filter(([, n]) => n.length).map(([name, nodes]) => ({ name, nodes }))
 })
+const view = ref<'lanes' | 'graph'>('lanes')
 
 const log = computed(() => (data.snap?.delegation ?? []).filter((e) => e.workspaceId === id.value).slice(-80))
 const logBox = ref<HTMLDivElement>()
@@ -130,13 +139,18 @@ const missionApprove = () => mission.value && ui.act(() => invoke('mission:appro
             </div>
             <h2 class="m-0 mt-1 text-[19px] font-semibold">{{ mission?.title ?? 'No missions yet' }}</h2>
           </div>
+          <div v-if="mission" class="seg" role="group" aria-label="Plan view">
+            <button type="button" :aria-pressed="view === 'lanes'" @click="view = 'lanes'">Lanes</button>
+            <button type="button" :aria-pressed="view === 'graph'" @click="view = 'graph'">Graph</button>
+          </div>
           <label v-if="missions.length" class="flex items-center gap-1.5 text-small text-ink-muted">
             Mission
             <select v-model="missionId" class="field min-h-9 w-auto"><option v-for="m in missions" :key="m.id" :value="m.id">{{ m.id }} {{ m.title }}</option></select>
           </label>
         </div>
         <div v-if="mission" class="card overflow-x-auto p-3.5">
-          <div class="grid min-w-[640px]" :style="{ gridTemplateColumns: `repeat(${lanes.length}, minmax(150px, 1fr))` }">
+          <MissionGraph v-if="view === 'graph'" :nodes="nodes" />
+          <div v-else class="grid min-w-[640px]" :style="{ gridTemplateColumns: `repeat(${lanes.length}, minmax(150px, 1fr))` }">
             <div v-for="(l, li) in lanes" :key="l.name" class="flex flex-col gap-2.5 px-2" :class="li ? 'border-l border-dashed border-line' : ''">
               <div class="flex justify-between"><span class="lbl">{{ l.name }}</span><span v-if="li < lanes.length - 1" class="text-xs text-ink-faint">→</span></div>
               <component :is="n.to ? 'RouterLink' : 'div'" v-for="n in l.nodes" :key="n.id + n.title" :to="n.to" class="flex flex-col gap-1.5 rounded-row border bg-sidebar p-2.5 text-ink no-underline hover:text-ink" :class="n.ring ? 'border-status-working/50' : 'border-line'">

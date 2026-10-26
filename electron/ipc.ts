@@ -1,7 +1,7 @@
 import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { existsSync } from 'node:fs'
 import type { Agent, IpcInvoke, Orchestrator, Workspace } from '@shared/types'
-import type { AnyAgent, NewWorkspaceInput, StoredAccount } from '@shared/app-types'
+import { CHAT_UPLOAD_LIMITS, type AnyAgent, type ChatUpload, type NewWorkspaceInput, type StoredAccount, type StoredTask } from '@shared/app-types'
 import { commit, db, findAgent, findTask, findWorkspace, nextTaskId, now, resetDb, snapshot, uid } from './services/db'
 import * as git from './services/git'
 import * as runner from './services/runner'
@@ -16,12 +16,24 @@ import * as claudeMcp from './services/claudeMcp'
 import { moveBack, publicAccount, refreshPlans, setApiKey, verifyKey } from './services/accounts'
 import { toast } from './services/bus'
 import { checkClaude } from './services/claude'
+import { wouldCycle } from './services/graph'
 
 type Handlers = { [K in keyof IpcInvoke]: (...args: Parameters<IpcInvoke[K]>) => ReturnType<IpcInvoke[K]> | Promise<ReturnType<IpcInvoke[K]>> }
 
 const str = (v: unknown, name: string): string => {
   if (typeof v !== 'string' || !v) throw new Error(`${name} must be a non-empty string`)
   return v
+}
+const uploads = (v: unknown): ChatUpload[] => {
+  if (!Array.isArray(v) || !v.length) throw new Error('files must be a non-empty list')
+  if (v.length > CHAT_UPLOAD_LIMITS.files) throw new Error(`Up to ${CHAT_UPLOAD_LIMITS.files} files per message`)
+  const out = v.map((f, i): ChatUpload => {
+    const u = obj<ChatUpload>(f, `files[${i}]`)
+    if (!(u.bytes instanceof Uint8Array)) throw new Error(`files[${i}] has no content`)
+    return { name: str(u.name, 'file name'), mime: typeof u.mime === 'string' ? u.mime : '', kind: u.kind === 'paste' ? 'paste' : 'file', bytes: u.bytes }
+  })
+  if (out.reduce((n, u) => n + u.bytes.byteLength, 0) > CHAT_UPLOAD_LIMITS.bytes) throw new Error('Attachments are too large')
+  return out
 }
 const obj = <T>(v: unknown, name: string): T => {
   if (!v || typeof v !== 'object') throw new Error(`${name} must be an object`)
@@ -98,6 +110,9 @@ const handlers: Handlers = {
   'jarvis:send': (id, text) => {
     // reply streams on 'jarvis:message'; don't hold the invoke open
     jarvis.send(str(id, 'conversationId'), str(text, 'text')).catch((e) => console.error(e))
+  },
+  'jarvis:sendWithFiles': (id, text, files) => {
+    jarvis.send(str(id, 'conversationId'), typeof text === 'string' ? text : '', uploads(files)).catch((e) => console.error(e))
   },
   'jarvis:setConfig': (c) => {
     Object.assign(db().jarvis, obj(c, 'config'))
@@ -245,7 +260,16 @@ const handlers: Handlers = {
   'task:update': (id, patch) => {
     const t = findTask(str(id, 'id'))
     if (!t) throw new Error('Task not found')
-    Object.assign(t, obj(patch, 'patch'), { id: t.id })
+    const p = obj(patch, 'patch') as Partial<StoredTask>
+    if (p.dependsOn !== undefined) {
+      if (!Array.isArray(p.dependsOn)) throw new Error('dependsOn must be a list of task ids')
+      for (const d of p.dependsOn) {
+        if (d === t.id) throw new Error(`${t.id} can't depend on itself`)
+        if (findTask(String(d))?.workspaceId !== t.workspaceId) throw new Error(`Unknown task ${d} in this workspace`)
+      }
+      if (wouldCycle(db().tasks, t.id, p.dependsOn)) throw new Error('That dependency would make a loop')
+    }
+    Object.assign(t, p, { id: t.id })
     commit('tasks')
     return t
   },
@@ -288,10 +312,7 @@ const handlers: Handlers = {
     const c = db().changes.find((x) => x.workspaceId === workspaceId && x.branch === branch)
     const t = c?.taskId ? findTask(c.taskId) : undefined
     if (!t) throw new Error('No task for this branch')
-    t.description = `${t.description ?? t.title}\n\nRequested changes: ${str(note, 'note')}`
-    t.status = 'todo'
-    commit('tasks')
-    runner.startTask(t.id).catch((e) => console.error(e))
+    runner.requestChanges(t.id, str(note, 'note'))
   },
 
   'approval:list': () => db().approvals,

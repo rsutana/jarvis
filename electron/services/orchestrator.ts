@@ -10,6 +10,7 @@ import { askJson } from './claude'
 import { accountFor, recordUsage } from './accounts'
 import { createApproval, handleApproval, completeTask } from './approvals'
 import { isRunning, runningCount, setOnTaskFinished, startTask } from './runner'
+import { cleanStepDeps } from './graph'
 import { mkdirSync } from 'node:fs'
 import { app } from 'electron'
 import { join } from 'node:path'
@@ -112,6 +113,8 @@ export function buildMission(workspaceId: string, plan: PlanOut, source: Mission
   const orch = orchestratorOf(workspaceId)
   const byName = (n: string): AnyAgent | undefined =>
     members.find((a) => a.name.toLowerCase() === n.trim().toLowerCase()) ?? members.find((a) => n.toLowerCase().includes(a.name.toLowerCase()))
+  const { steps, problems } = cleanStepDeps(plan.steps)
+  for (const p of problems) log(workspaceId, `Plan “${plan.title}”: ${p}.`, 'bad')
   const m: StoredMission = {
     id: nextMissionId(),
     title: plan.title,
@@ -119,7 +122,7 @@ export function buildMission(workspaceId: string, plan: PlanOut, source: Mission
     workspaceId,
     prompt,
     status: 'draft',
-    steps: plan.steps.map((s) => {
+    steps: steps.map((s) => {
       const a = byName(s.assignee) ?? orch ?? members[0]
       return {
         title: s.title,
@@ -131,7 +134,7 @@ export function buildMission(workspaceId: string, plan: PlanOut, source: Mission
         ...({ details: s.details, criteria: s.criteria } as object)
       }
     }),
-    estUsagePct: Math.max(1, Math.round(plan.steps.length * 1.2))
+    estUsagePct: Math.max(1, Math.round(steps.length * 1.2))
   }
   db().missions.push(m)
   commit('missions')
@@ -198,7 +201,9 @@ export function approveMission(id: string): void {
   // dependsOn arrives as step indexes from plans, or task ids from seeded missions
   m.steps.forEach((s, i) => {
     const t = db().tasks.find((x) => x.id === ids[i])!
-    t.dependsOn = (s.dependsOn ?? []).map((d) => (/^\d+$/.test(d) ? ids[Number(d)] : d)).filter(Boolean)
+    t.dependsOn = (s.dependsOn ?? [])
+      .map((d) => (/^\d+$/.test(d) ? ids[Number(d)] : d))
+      .filter((d) => d && d !== t.id && db().tasks.some((x) => x.id === d))
     s.dependsOn = t.dependsOn
   })
   m.status = 'running'

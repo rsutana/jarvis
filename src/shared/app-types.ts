@@ -26,6 +26,22 @@ import type {
 
 export * from './types'
 
+/** A file or long paste sent with a Jarvis message (renderer → main). */
+export interface ChatUpload {
+  name: string
+  mime: string
+  kind: 'file' | 'paste'
+  bytes: Uint8Array
+}
+/** What a message keeps about an attachment; the file itself sits in the app's data folder. */
+export interface ChatAttachment {
+  name: string
+  size: number
+  kind: 'file' | 'paste'
+  path: string
+}
+export const CHAT_UPLOAD_LIMITS = { files: 10, bytes: 20 * 1024 * 1024 }
+
 export interface Conversation {
   id: Id
   title: string
@@ -111,6 +127,7 @@ export type StoredTask = Task & {
   qaOf?: string // branch this QA task reviews
   description?: string
   doneAt?: ISODate
+  qaAttempts?: number // QA fails this task has been sent back to fix
 }
 export type StoredAccount = AIAccount & {
   budgetTokens: number // tokens that count as 100% of one window
@@ -142,6 +159,7 @@ export interface AppSettings {
   loadUserClaudeSettings: boolean // pass user-level hooks/plugins to spawned CLIs
   worktreeRoot: string // '' = userData/worktrees
   skillDirs?: string[] // extra shared-skill folders on top of the ones found automatically
+  qaRetries?: number // times a failed QA sends the task back before giving up; undefined = 2
 }
 
 export interface ClaudeCheck {
@@ -186,7 +204,12 @@ export interface Snapshot {
 export type Collection = Exclude<keyof Snapshot, 'awaySince' | 'movedAgents'>
 
 declare module './types' {
+  interface ChatMessage {
+    attachments?: ChatAttachment[]
+  }
   interface IpcInvoke {
+    /** jarvis:send with files or long pastes attached; text may be empty. */
+    'jarvis:sendWithFiles': (conversationId: Id, text: string, files: ChatUpload[]) => void
     'app:snapshot': () => Snapshot
     'app:resetData': (mode: 'demo' | 'empty') => void
     'app:openPath': (path: string) => void

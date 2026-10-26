@@ -19,6 +19,8 @@ async function savePath(): Promise<void> {
   await runCheck()
 }
 const setUserSettings = (v: boolean) => ui.act(() => invoke('app:setSettings', { loadUserClaudeSettings: v }))
+const qaRetries = ref(settings.value.qaRetries ?? 2)
+const saveQaRetries = () => ui.act(() => invoke('app:setSettings', { qaRetries: Math.max(0, Math.min(5, Math.round(qaRetries.value || 0))) }), 'Saved')
 const confirmReset = ref<'demo' | 'empty' | null>(null)
 async function reset(): Promise<void> {
   if (!confirmReset.value) return
@@ -48,6 +50,10 @@ async function reset(): Promise<void> {
         <div class="flex items-start gap-2.5 text-[13px]">
           <Toggle :model-value="settings.loadUserClaudeSettings" label="Load my user Claude settings" @update:model-value="setUserSettings" />
           <span>Load my user-level Claude Code settings in agent runs <span class="block text-xs text-ink-faint">Off keeps your personal hooks and plugins out of agent sessions. Project settings in each repo always apply.</span></span>
+        </div>
+        <div class="flex items-center gap-2.5 text-[13px]">
+          <label for="qar" class="flex-1">QA retries before giving up <span class="block text-xs text-ink-faint">When QA fails, the task goes back to its agent with the QA notes, then QA runs again. 0 turns this off.</span></label>
+          <input id="qar" v-model.number="qaRetries" type="number" min="0" max="5" class="field w-20" @change="saveQaRetries" />
         </div>
       </div>
       <div class="card flex flex-col gap-3 p-4">

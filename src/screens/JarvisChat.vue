@@ -72,7 +72,7 @@ const runOnce = () => mission.value && ui.act(() => invoke('mission:runOnce', mi
           <div class="mb-2.5 flex flex-wrap gap-1.5">
             <button v-for="s in ['@workspace', '@agent', '/plan', '/status']" :key="s" class="chip min-h-8 cursor-pointer hover:border-accent" type="button" @click="composer?.insert(s)">{{ s }}</button>
           </div>
-          <Composer id="cmsg" ref="composer" placeholder="Message Jarvis… use @ to target a workspace or agent" :disabled="typing" @send="send" />
+          <Composer id="cmsg" ref="composer" placeholder="Message Jarvis… use @ to target a workspace or agent, or paste and drop files" :disabled="typing" @send="send" />
         </div>
       </section>
 

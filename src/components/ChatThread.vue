@@ -3,6 +3,7 @@ import { nextTick, ref, watch } from 'vue'
 import type { ChatMessage } from '@shared/types'
 import MissionCard from './MissionCard.vue'
 import Avatar from './Avatar.vue'
+import Icon from './Icon.vue'
 import { md } from './status'
 
 const props = defineProps<{ messages: ChatMessage[]; typing?: boolean; roomy?: boolean }>()
@@ -20,7 +21,12 @@ watch(
 <template>
   <div ref="box" class="flex flex-1 flex-col overflow-auto" :class="roomy ? 'gap-4 px-6 py-5' : 'gap-3 p-4 text-[13px]'" aria-live="polite">
     <template v-for="m in messages" :key="m.id">
-      <div v-if="m.role === 'user'" class="max-w-[85%] self-end rounded-[14px_14px_2px_14px] bg-accent-active px-3 py-2.5 whitespace-pre-wrap">{{ m.text }}</div>
+      <div v-if="m.role === 'user'" class="flex max-w-[85%] flex-col items-end gap-1.5 self-end">
+        <div v-if="m.attachments?.length" class="flex flex-wrap justify-end gap-1.5">
+          <span v-for="a in m.attachments" :key="a.path" class="chip max-w-full" :title="a.name"><Icon name="attach" :size="12" /><span class="max-w-[220px] truncate">{{ a.kind === 'paste' ? 'Pasted text' : a.name }}</span></span>
+        </div>
+        <div v-if="m.text" class="rounded-[14px_14px_2px_14px] bg-accent-active px-3 py-2.5 whitespace-pre-wrap">{{ m.text }}</div>
+      </div>
       <div v-else class="flex gap-3">
         <Avatar v-if="roomy" name="Jarvis" square :size="28" />
         <div class="flex min-w-0 flex-1 flex-col gap-2.5">
