@@ -107,10 +107,42 @@ function stateSummary(): string {
   ].join('\n\n')
 }
 
+/**
+ * Workspaces and agents the user @-mentioned (the composer inserts `@<name>`), resolved
+ * longest name first so "@News website" doesn't also count as an agent called "News".
+ */
+function mentions(text: string): string {
+  const d = db()
+  const named = [
+    ...d.workspaces.map((w) => ({ name: w.name, what: `workspace **${w.name}** (folder: ${w.folderPath || 'not set'})` })),
+    ...d.agents.map((a) => {
+      const ws = d.workspaces.find((w) => w.id === a.workspaceId)
+      return { name: a.name, what: `${a.kind === 'orchestrator' ? 'orchestrator' : 'agent'} **${a.name}**, ${a.role}, ${ws ? `in workspace **${ws.name}**` : 'in the unassigned pool'}` }
+    })
+  ].sort((a, b) => b.name.length - a.name.length)
+  let rest = text.toLowerCase()
+  const out: string[] = []
+  // a mention starts the text or follows whitespace ("me@news.com" is not one) and is a whole
+  // name ("@Echo" must not match inside "@Echoes")
+  const at = (tag: string, i: number) => (i === 0 || /\s/.test(rest[i - 1])) && !/[\p{L}\p{N}_-]/u.test(rest[i + tag.length] ?? '')
+  for (const n of named) {
+    const tag = `@${n.name.toLowerCase()}`
+    let found = false
+    for (let i = rest.indexOf(tag); i >= 0; i = rest.indexOf(tag, i + 1)) {
+      if (!at(tag, i)) continue
+      found = true
+      rest = rest.slice(0, i) + ' '.repeat(tag.length) + rest.slice(i + tag.length)
+    }
+    if (found) out.push(`- @${n.name} → ${n.what}`)
+  }
+  return out.join('\n')
+}
+
 const SYSTEM = `You are Jarvis, the user's main assistant in a desktop app that runs teams of AI agents.
 Each workspace is a project folder with one orchestrator and several agents. You never do the work yourself; you plan it and hand it to a workspace.
 You can read workspace folders with Read, Glob and Grep to check facts before you plan. Never change files.
 Files the user attaches are listed in <attachments>; open the ones not shown inline (images, PDFs, large files) with Read.
+Workspaces and agents the user @-mentions are resolved in <mentions>; those are exactly the ones they mean.
 Be brief and concrete. Use **bold** for names. Plain markdown only.
 When the user asks for work to be done, reply with a short explanation and then exactly one fenced block:
 \`\`\`mission
@@ -203,7 +235,9 @@ export async function send(conversationId: string, text: string, uploads: ChatUp
       return r
     }
     const files = attachments ? `\n\n${attachmentBlock(attachments)}` : ''
-    const r = await ask(`${text || 'Have a look at the attached files.'}${files}\n\n<app_state>\n${stateSummary()}\n</app_state>`)
+    const tagged = mentions(text)
+    const picked = tagged ? `\n\n<mentions>\n${tagged}\n</mentions>` : ''
+    const r = await ask(`${text || 'Have a look at the attached files.'}${files}${picked}\n\n<app_state>\n${stateSummary()}\n</app_state>`)
     if (!r.ok) {
       // a stale session id is the usual cause; drop it so the next turn starts fresh
       conv.sessionId = undefined
