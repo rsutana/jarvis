@@ -309,12 +309,39 @@ function closeMissions(): void {
   for (const m of db().missions) {
     if (m.status !== 'running') continue
     const ts = db().tasks.filter((t) => t.missionId === m.id)
-    if (ts.length && ts.every((t) => t.status === 'done')) {
+    if (!ts.length) {
+      // every task was removed
+      m.status = 'done'
+      log(m.workspaceId, `Mission ${m.id} closed: no tasks left.`)
+    } else if (ts.every((t) => t.status === 'done')) {
       m.status = 'done'
       log(m.workspaceId, `Mission ${m.id} done.`, 'good')
     }
   }
   commit('missions')
+}
+
+/**
+ * Drop tasks that aren't running or done (duplicates, work no longer needed). Tasks that
+ * depended on them stop waiting, and pending approvals about them are closed. Returns the ids removed.
+ */
+export function removeTasks(workspaceId: string, ids: string[], by: string): string[] {
+  const gone = new Set<string>()
+  for (const id of ids) {
+    const t = db().tasks.find((x) => x.id === id && x.workspaceId === workspaceId)
+    if (!t || isRunning(t.id) || t.status === 'done') continue
+    db().tasks.splice(db().tasks.indexOf(t), 1)
+    gone.add(id)
+  }
+  if (!gone.size) return []
+  db().tasks.forEach((x) => (x.dependsOn = x.dependsOn.filter((d) => !gone.has(d))))
+  // plan approvals point at a mission, every other kind at a task
+  for (const a of db().approvals) if (a.state === 'pending' && a.kind !== 'plan' && a.taskId && gone.has(a.taskId)) a.state = 'rejected'
+  log(workspaceId, `${[...gone].join(', ')} removed by ${by}.`)
+  commit('tasks', 'approvals')
+  closeMissions()
+  schedule()
+  return [...gone]
 }
 
 setOnTaskFinished(() => {
@@ -350,13 +377,7 @@ export async function message(workspaceId: string, text: string): Promise<void> 
     timeoutMs: 3 * 60_000
   })
   recordUsage(pick.account.id, workspaceId, tokens)
-  for (const id of value.removeTaskIds ?? []) {
-    const t = db().tasks.find((x) => x.id === id && x.workspaceId === workspaceId)
-    if (t && !isRunning(t.id) && t.status !== 'done') {
-      db().tasks.splice(db().tasks.indexOf(t), 1)
-      db().tasks.forEach((x) => (x.dependsOn = x.dependsOn.filter((d) => d !== id)))
-    }
-  }
+  removeTasks(workspaceId, value.removeTaskIds ?? [], orch.name)
   log(workspaceId, value.reply, 'orchestrator')
   commit('tasks')
   if (value.newMission) await planMission(workspaceId, value.newMission, 'user')

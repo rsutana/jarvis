@@ -235,6 +235,8 @@ declare module './types' {
     'orchestrator:save': (o: Orchestrator) => Orchestrator
     'task:update': (id: Id, patch: Partial<StoredTask>) => StoredTask
     'task:start': (id: Id) => void
+    /** drop tasks that aren't running or done; returns the ids removed */
+    'task:remove': (ids: Id[]) => Id[]
     'run:list': (taskId: Id) => Run[]
     'change:diff': (workspaceId: Id, branch: string) => FileDiff[]
     'change:requestQa': (workspaceId: Id, branch: string) => void

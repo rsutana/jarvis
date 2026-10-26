@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import type { Run, RunEvent } from '@shared/types'
 import DrawerPanel from '@/shell/DrawerPanel.vue'
 import Avatar from '@/components/Avatar.vue'
@@ -10,6 +10,7 @@ import { invoke, on } from '@/lib/ipc'
 import { duration, md, statusBg, taskLabel, timeShort } from '@/components/status'
 
 const route = useRoute()
+const router = useRouter()
 const data = useData()
 const ui = useUi()
 const wsId = computed(() => route.params.id as string)
@@ -78,6 +79,18 @@ async function sendSteer(): Promise<void> {
 }
 const start = () => task.value && ui.act(() => invoke('task:start', task.value!.id), 'Run started').then(() => setTimeout(loadRuns, 400))
 const stop = () => run.value && ui.act(() => invoke('run:stop', run.value!.id), 'Stopping run')
+// duplicates and work that's no longer needed; takes a second click
+const removing = ref(false)
+async function remove(): Promise<void> {
+  if (!task.value) return
+  if (!removing.value) {
+    removing.value = true
+    return
+  }
+  removing.value = false
+  const id = task.value.id
+  if (await ui.act(() => invoke('task:remove', [id]), `${id} removed`)) router.push(`/w/${wsId.value}/tasks`)
+}
 const reassign = (aid: string) => task.value && ui.act(() => invoke('task:update', task.value!.id, { assigneeId: aid }), `Reassigned to ${data.nameOf(aid)}`)
 function toggleCriterion(i: number): void {
   if (!task.value) return
@@ -106,7 +119,10 @@ const showReassign = ref(false)
           </div>
         </div>
         <button v-if="live" class="btn btn-sm btn-danger border-status-blocked/40" type="button" @click="stop">Stop run</button>
-        <button v-else-if="task.status !== 'done'" class="btn btn-sm btn-pri" type="button" @click="start">{{ runs.length ? 'Run again' : 'Start run' }}</button>
+        <template v-else-if="task.status !== 'done'">
+          <button class="btn btn-sm" :class="removing ? 'btn-danger' : 'btn-ghost'" type="button" @click="remove" @blur="removing = false">{{ removing ? 'Click again to remove' : 'Remove task' }}</button>
+          <button class="btn btn-sm btn-pri" type="button" @click="start">{{ runs.length ? 'Run again' : 'Start run' }}</button>
+        </template>
       </template>
       <h1 v-else class="m-0 text-title">No runs yet</h1>
     </template>

@@ -279,6 +279,16 @@ const handlers: Handlers = {
     commit('tasks')
     return t
   },
+  'task:remove': (ids) => {
+    if (!Array.isArray(ids) || !ids.length) throw new Error('ids must be a non-empty list')
+    const ts = ids.map((id) => findTask(str(id, 'id')))
+    for (const [i, t] of ts.entries()) {
+      if (!t) throw new Error(`Task ${ids[i]} not found`)
+      if (runner.isRunning(t.id)) throw new Error(`${t.id} is running. Stop the run first.`)
+      if (t.status === 'done') throw new Error(`${t.id} is done; finished tasks stay in the history.`)
+    }
+    return orchestrator.removeTasks(ts[0]!.workspaceId, ids, 'you')
+  },
   'task:start': (id) => {
     runner.startTask(str(id, 'id')).catch((e) => console.error(e))
   },

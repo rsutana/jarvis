@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Task, TaskStatus } from '@shared/types'
+import type { StoredTask } from '@shared/app-types'
 import DrawerPanel from '@/shell/DrawerPanel.vue'
 import Avatar from '@/components/Avatar.vue'
 import { useData } from '@/stores/data'
@@ -33,6 +34,25 @@ const cols = computed(() =>
 const PRI: Record<string, string> = { high: 'text-status-danger', medium: 'text-ink-muted', low: 'text-ink-faint' }
 const ring: Partial<Record<TaskStatus, string>> = { in_progress: 'border-status-working/40', blocked: 'border-status-blocked/40', review: 'border-status-review/40' }
 const noteTone: Partial<Record<TaskStatus, string>> = { in_progress: 'text-status-working', blocked: 'text-status-danger', review: 'text-status-review' }
+
+/** Who added it: you, Jarvis, an automation, or the agent (usually the orchestrator) that planned it. */
+function creator(t: StoredTask): string {
+  if (t.createdBy === 'automation' || data.snap?.automations.some((a) => a.id === t.createdBy)) return 'Automation'
+  return data.nameOf(t.createdBy)
+}
+
+// remove takes a second click; running and finished tasks can't be removed
+const running = computed(() => new Set((data.snap?.runs ?? []).filter((r) => (r as { live?: boolean }).live).map((r) => r.taskId)))
+const removable = (t: StoredTask) => t.status !== 'done' && !running.value.has(t.id)
+const armed = ref<string>()
+async function remove(t: StoredTask): Promise<void> {
+  if (armed.value !== t.id) {
+    armed.value = t.id
+    return
+  }
+  armed.value = undefined
+  await ui.act(() => invoke('task:remove', [t.id]), `${t.id} removed`)
+}
 
 const showNew = ref(route.query.new === '1')
 const form = reactive({ title: '', assigneeId: team.value[0]?.id ?? '', priority: 'medium' as Task['priority'], description: '', criteria: '', start: true })
@@ -94,29 +114,53 @@ async function create(): Promise<void> {
             <span class="dot" :class="statusBg[c.s]" /><span class="lbl !text-ink">{{ taskLabel[c.s] }}</span>
             <span class="rounded-full bg-raised px-1.5 text-[11px] text-ink-muted">{{ c.n }}</span>
           </div>
-          <RouterLink v-for="t in c.items" :key="t.id" :to="`/w/${id}/tasks/${t.id}`" class="flex flex-col gap-1.5 rounded-row border bg-card p-2.5 text-ink no-underline hover:border-accent hover:text-ink" :class="ring[t.status] ?? 'border-line'">
-            <span class="flex items-center gap-2"><span class="mono text-tiny text-ink-faint">{{ t.id }}</span><span class="flex-1" /><span class="chip px-1.5 text-[11px]">{{ t.missionId ?? (t.qaOf ? 'QA' : 'Manual') }}</span></span>
-            <span class="text-[13.5px] font-medium">{{ t.title }}</span>
-            <span v-if="t.note" class="text-xs" :class="noteTone[t.status] ?? 'text-ink-faint'">{{ t.note }}</span>
-            <span class="flex items-center gap-2">
-              <Avatar :name="data.nameOf(t.assigneeId)" :color="data.agent(t.assigneeId)?.look.color" :size="22" />
-              <span class="text-xs text-ink-faint">{{ data.nameOf(t.assigneeId) }}</span><span class="flex-1" />
-              <span class="text-tiny capitalize" :class="PRI[t.priority]">{{ t.priority }}</span>
-            </span>
-          </RouterLink>
+          <div v-for="t in c.items" :key="t.id" class="group relative">
+            <RouterLink :to="`/w/${id}/tasks/${t.id}`" class="flex flex-col gap-1.5 rounded-row border bg-card p-2.5 text-ink no-underline hover:border-accent hover:text-ink" :class="ring[t.status] ?? 'border-line'">
+              <span class="flex items-center gap-2"><span class="mono text-tiny text-ink-faint">{{ t.id }}</span><span class="flex-1" /><span class="chip px-1.5 text-[11px]">{{ t.missionId ?? (t.qaOf ? 'QA' : 'Manual') }}</span></span>
+              <span class="text-[13.5px] font-medium">{{ t.title }}</span>
+              <span v-if="t.note" class="text-xs" :class="noteTone[t.status] ?? 'text-ink-faint'">{{ t.note }}</span>
+              <span class="truncate text-[11px] text-ink-faint">Added by {{ creator(t) }} · {{ ago(t.createdAt) }}</span>
+              <span class="flex items-center gap-2">
+                <Avatar :name="data.nameOf(t.assigneeId)" :color="data.agent(t.assigneeId)?.look.color" :size="22" />
+                <span class="text-xs text-ink-faint">{{ data.nameOf(t.assigneeId) }}</span><span class="flex-1" />
+                <span class="text-tiny capitalize" :class="PRI[t.priority]">{{ t.priority }}</span>
+              </span>
+            </RouterLink>
+            <!-- beside the link, not inside it, so it stays its own control; covers the mission chip while shown -->
+            <button
+              v-if="removable(t)"
+              type="button"
+              class="absolute top-1.5 right-1.5 min-h-6 cursor-pointer rounded-control border px-2 text-[11px] font-semibold focus-visible:opacity-100"
+              :class="armed === t.id ? 'border-status-blocked/50 bg-card text-status-danger opacity-100' : 'border-line-strong bg-card text-ink-muted opacity-0 group-hover:opacity-100 hover:text-ink'"
+              :aria-label="armed === t.id ? `Confirm removing ${t.id}` : `Remove ${t.id} ${t.title}`"
+              @click="remove(t)"
+              @blur="armed === t.id && (armed = undefined)"
+            >{{ armed === t.id ? 'Remove?' : '× Remove' }}</button>
+          </div>
         </div>
       </div>
     </div>
     <div v-else class="min-h-0 flex-1 overflow-auto">
       <table class="w-full border-collapse text-[13px]">
-        <thead class="sticky top-0 bg-drawer"><tr class="text-left"><th class="lbl px-4 py-2">Task</th><th class="lbl px-3 py-2">Status</th><th class="lbl px-3 py-2">Assignee</th><th class="lbl px-3 py-2">Mission</th><th class="lbl px-3 py-2">Created</th></tr></thead>
+        <thead class="sticky top-0 bg-drawer"><tr class="text-left"><th class="lbl px-4 py-2">Task</th><th class="lbl px-3 py-2">Status</th><th class="lbl px-3 py-2">Assignee</th><th class="lbl px-3 py-2">Mission</th><th class="lbl px-3 py-2">Added</th><th><span class="sr-only">Remove</span></th></tr></thead>
         <tbody>
           <tr v-for="t in tasks" :key="t.id" class="cursor-pointer border-t border-line-soft hover:bg-raised" @click="router.push(`/w/${id}/tasks/${t.id}`)">
             <td class="px-4 py-2"><RouterLink :to="`/w/${id}/tasks/${t.id}`" class="text-ink"><span class="mono text-ink-faint">{{ t.id }}</span> {{ t.title }}</RouterLink></td>
             <td class="px-3 py-2"><span class="flex items-center gap-1.5"><span class="dot" :class="statusBg[t.status]" />{{ taskLabel[t.status] }}</span></td>
             <td class="px-3 py-2">{{ data.nameOf(t.assigneeId) }}</td>
             <td class="px-3 py-2 text-ink-muted">{{ t.missionId ?? 'Manual' }}</td>
-            <td class="px-3 py-2 text-ink-faint">{{ ago(t.createdAt) }}</td>
+            <td class="px-3 py-2 text-ink-faint">{{ ago(t.createdAt) }} · by {{ creator(t) }}</td>
+            <td class="px-3 py-1.5 text-right">
+              <button
+                v-if="removable(t)"
+                type="button"
+                class="btn btn-sm"
+                :class="armed === t.id ? 'btn-danger' : 'btn-ghost'"
+                :aria-label="armed === t.id ? `Confirm removing ${t.id}` : `Remove ${t.id} ${t.title}`"
+                @click.stop="remove(t)"
+                @blur="armed === t.id && (armed = undefined)"
+              >{{ armed === t.id ? 'Remove?' : 'Remove' }}</button>
+            </td>
           </tr>
         </tbody>
       </table>
