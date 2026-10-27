@@ -246,7 +246,7 @@ const openFile = (f: string) => ui.act(() => invoke('app:openPath', f))
                 <template v-if="form.oauth === 'client'">
                   <input v-model="form.clientId" class="field mono text-small" placeholder="Client ID" aria-label="OAuth client ID" autocomplete="off" />
                   <input v-model="form.clientSecret" type="password" class="field mono text-small" :placeholder="cur.mcp.hasClientSecret ? 'Client secret saved · type to replace' : 'Client secret (optional)'" aria-label="OAuth client secret" autocomplete="off" />
-                  <p class="m-0 text-xs text-ink-faint">Register this redirect URL with the provider: <span class="mono select-all">{{ MCP_REDIRECT_URL }}</span></p>
+                  <p class="m-0 text-xs text-ink-faint">Register this redirect URL with the provider: <span class="mono select-all">{{ MCP_REDIRECT_URL }}</span>. Jarvis picks a free port for each sign-in, so the provider must allow any port on the loopback address.</p>
                 </template>
               </div>
             </template>

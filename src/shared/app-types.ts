@@ -291,17 +291,15 @@ export interface NewWorkspaceInput {
   agentIds: Id[]
 }
 
-/** Model names shown in the UI → CLI + provider. */
-/** Where MCP OAuth sign-in comes back to (a loopback listener in the main process). Register this for "bring your own client". */
 /**
- * The first port is the one to register; auto-registered clients also list the others as
- * fallbacks, since a port can be taken. Kept below 44000: WSL's mirrored networking reserves
- * the Linux ephemeral range (e.g. 44620–48715) on Windows, and Windows' own starts at 49152.
+ * Where MCP OAuth sign-in comes back to: a loopback listener in the main process, on a port
+ * the OS picks as free for each sign-in. Register the portless URL for "bring your own client";
+ * loopback redirects match on any port (RFC 8252 §7.3).
  */
-export const MCP_CALLBACK_PORTS = [38823, 28823, 18823]
 export const mcpRedirectUrl = (port: number): string => `http://127.0.0.1:${port}/callback`
-export const MCP_REDIRECT_URL = mcpRedirectUrl(MCP_CALLBACK_PORTS[0])
+export const MCP_REDIRECT_URL = 'http://127.0.0.1/callback'
 
+/** Model names shown in the UI → CLI + provider. */
 export const MODELS: { name: string; provider: 'anthropic' | 'openai'; cli: string }[] = [
   { name: 'Opus 5.5', provider: 'anthropic', cli: 'opus' },
   { name: 'Sonnet 5.5', provider: 'anthropic', cli: 'sonnet' },

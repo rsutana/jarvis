@@ -7,6 +7,7 @@
 import { app, safeStorage, shell } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
@@ -14,7 +15,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { UnauthorizedError, type OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
 import type { OAuthClientInformationMixed, OAuthClientMetadata, OAuthTokens } from '@modelcontextprotocol/sdk/shared/auth.js'
 import type { Integration, McpConfig, Policy } from '@shared/types'
-import { MCP_CALLBACK_PORTS, MCP_REDIRECT_URL, mcpRedirectUrl } from '@shared/app-types'
+import { mcpRedirectUrl } from '@shared/app-types'
 import { commit, db, now } from './db'
 
 interface Secret {
@@ -22,6 +23,7 @@ interface Secret {
   clientSecret?: string
   tokens?: OAuthTokens
   client?: OAuthClientInformationMixed // from dynamic client registration
+  port?: number // the callback port that registration is for
   verifier?: string // PKCE, between the browser hop and the token exchange
   state?: string
 }
@@ -38,7 +40,7 @@ function readSecret(i: Integration): Secret {
 }
 
 function writeSecret(i: Integration, s: Secret): void {
-  const empty = !Object.keys(s.headers).length && !s.clientSecret && !s.tokens && !s.client && !s.verifier && !s.state
+  const empty = !Object.keys(s.headers).length && !s.clientSecret && !s.tokens && !s.client && !s.port && !s.verifier && !s.state
   if (empty) return void (i.mcpSecret = undefined)
   if (!safeStorage.isEncryptionAvailable()) throw new Error('Secure storage is not available on this system, so MCP credentials cannot be saved safely.')
   i.mcpSecret = safeStorage.encryptString(JSON.stringify(s)).toString('base64')
@@ -64,7 +66,7 @@ class Provider implements OAuthClientProvider {
   get clientMetadata(): OAuthClientMetadata {
     return {
       client_name: 'Jarvis',
-      redirect_uris: MCP_CALLBACK_PORTS.map(mcpRedirectUrl),
+      redirect_uris: [this.redirectUrl],
       grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
       token_endpoint_auth_method: 'none' // a desktop app can't keep a secret; PKCE protects the exchange
@@ -79,13 +81,11 @@ class Provider implements OAuthClientProvider {
     const s = readSecret(this.i)
     const c = this.i.mcp!
     if (c.oauth === 'client') return c.clientId ? { client_id: c.clientId, ...(s.clientSecret ? { client_secret: s.clientSecret } : {}) } : undefined
-    // registered for other callback URLs (e.g. before the port moved): register again
-    const uris = s.client && 'redirect_uris' in s.client ? s.client.redirect_uris : undefined
-    if (Array.isArray(uris) && !uris.includes(this.redirectUrl)) return undefined
-    return s.client
+    // registered for another callback port (it was taken, or from the old fixed ports): register again
+    return s.port === this.port ? s.client : undefined
   }
   saveClientInformation(client: OAuthClientInformationMixed): void {
-    patch(this.i, { client })
+    patch(this.i, { client, port: this.port })
   }
   tokens(): OAuthTokens | undefined {
     return readSecret(this.i).tokens
@@ -120,11 +120,25 @@ const canListen = (port: number) =>
     s.listen(port, '127.0.0.1', () => s.close(() => ok(true)))
   })
 
-/** The first callback port that's free (or held by an unfinished sign-in of ours, which the new one replaces). */
-async function callbackPort(ports: number[]): Promise<number> {
-  for (const p of ports) if (active?.port === p || (await canListen(p))) return p
-  const which = ports.length === 1 ? `Port ${ports[0]} is` : `Ports ${ports.join(', ')} are all`
-  throw new Error(`${which} taken on this PC, so the sign-in can't come back to Jarvis. Another app is using ${ports.length === 1 ? 'it' : 'them'}, or Windows reserved ${ports.length === 1 ? 'it' : 'them'} (WSL mirrored networking and Hyper-V reserve port ranges).`)
+/** A loopback port the OS says is free (it skips ports Windows reserved, e.g. for WSL and Hyper-V). */
+const freePort = () =>
+  new Promise<number>((ok, fail) => {
+    const s = createServer()
+    s.once('error', fail)
+    s.listen(0, '127.0.0.1', () => {
+      const { port } = s.address() as AddressInfo
+      s.close(() => ok(port))
+    })
+  })
+
+/**
+ * The port an auto-registered client was registered with, while it's free (or held by an
+ * unfinished sign-in of ours, which the new one replaces), so it needn't register again;
+ * otherwise any free port.
+ */
+async function callbackPort(registered: number | undefined): Promise<number> {
+  if (registered && (active?.port === registered || (await canListen(registered)))) return registered
+  return freePort()
 }
 
 /**
@@ -138,7 +152,7 @@ async function waitForCode(port: number, expectState: () => string | undefined):
   const code = new Promise<string>((resolve, reject) => (settle = { resolve, reject }))
   code.catch(() => undefined) // a cancel can land before the caller awaits it
   const server = createServer((req, res) => {
-    const u = new URL(req.url ?? '/', MCP_REDIRECT_URL)
+    const u = new URL(req.url ?? '/', mcpRedirectUrl(port))
     if (u.pathname !== '/callback') return void res.writeHead(404).end()
     const c = u.searchParams.get('code')
     const err = u.searchParams.get('error_description') ?? u.searchParams.get('error')
@@ -226,7 +240,7 @@ export function configureMcp(id: string, cfg: McpConfig, secrets: { headers?: Re
   const same = sameEndpoint(i.mcp, next)
   if (!same) {
     // a different server or sign-in method: old tokens and registrations don't apply
-    Object.assign(s, { tokens: undefined, client: undefined, verifier: undefined, state: undefined })
+    Object.assign(s, { tokens: undefined, client: undefined, port: undefined, verifier: undefined, state: undefined })
     i.status = 'disconnected'
   }
   i.mcp = { ...next, signedIn: !!s.tokens, ...(same ? { server: i.mcp!.server, testedAt: i.mcp!.testedAt } : {}) }
@@ -243,9 +257,10 @@ export async function connectMcp(id: string): Promise<Integration> {
   if (empty.length) throw new Error(`Enter a value for the ${empty.join(', ')} header${empty.length === 1 ? '' : 's'} first.`)
   let authUrl: URL | undefined
   const oauth = i.mcp!.transport !== 'stdio' && i.mcp!.oauth !== 'none'
-  // your own client only has the first URL registered; auto-registered ones list every port
+  // your own client is registered portless, so any free port does
+  const s = readSecret(i)
   const port = oauth
-    ? await callbackPort(i.mcp!.oauth === 'client' ? MCP_CALLBACK_PORTS.slice(0, 1) : MCP_CALLBACK_PORTS).catch((e: Error) => {
+    ? await callbackPort(i.mcp!.oauth === 'dcr' && s.client ? s.port : undefined).catch((e: Error) => {
         i.mcp = { ...i.mcp!, testedAt: now(), error: e.message }
         i.status = 'error'
         commit('integrations')
@@ -306,7 +321,7 @@ export async function connectMcp(id: string): Promise<Integration> {
 
 export function signOutMcp(id: string): Integration {
   const i = find(id)
-  patch(i, { tokens: undefined, client: undefined, verifier: undefined, state: undefined })
+  patch(i, { tokens: undefined, client: undefined, port: undefined, verifier: undefined, state: undefined })
   i.mcp = { ...i.mcp!, signedIn: false }
   i.status = 'disconnected'
   commit('integrations')
