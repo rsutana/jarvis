@@ -22,6 +22,7 @@ export interface ClaudeOptions {
   resume?: string
   jsonSchema?: object
   timeoutMs?: number
+  maxTurns?: number // cap on the CLI's own tool loop; stops with reason 'error_max_turns'
   thinking?: 'default' | 'medium' | 'high'
 }
 
@@ -34,7 +35,7 @@ export type ClaudeEvent =
   | { type: 'tool_result'; id: string; text: string; isError: boolean }
   | { type: 'usage'; tokens: number }
   | { type: 'rate_limit'; status: string; resetsAt?: number; window?: string }
-  | { type: 'result'; ok: boolean; text: string; sessionId?: string; tokens: number; structured?: unknown; costUsd?: number }
+  | { type: 'result'; ok: boolean; text: string; sessionId?: string; tokens: number; structured?: unknown; costUsd?: number; reason?: string }
   | { type: 'stderr'; text: string }
 
 export interface ClaudeHandle {
@@ -88,6 +89,7 @@ export function spawnClaude(opts: ClaudeOptions, onEvent: (e: ClaudeEvent) => vo
   if (opts.systemPrompt) args.push('--append-system-prompt', opts.systemPrompt)
   if (opts.resume) args.push('--resume', opts.resume)
   if (opts.jsonSchema) args.push('--json-schema', JSON.stringify(opts.jsonSchema))
+  if (opts.maxTurns) args.push('--max-turns', String(opts.maxTurns))
   for (const d of opts.addDirs ?? []) args.push('--add-dir', d)
 
   const env = envFor(opts.account)
@@ -142,7 +144,8 @@ export function spawnClaude(opts: ClaudeOptions, onEvent: (e: ClaudeEvent) => vo
         sessionId: m.session_id ?? sessionId,
         tokens: total,
         structured: m.structured_output,
-        costUsd: m.total_cost_usd
+        costUsd: m.total_cost_usd,
+        reason: m.subtype
       }
       onEvent(result)
     }
@@ -175,7 +178,7 @@ export function spawnClaude(opts: ClaudeOptions, onEvent: (e: ClaudeEvent) => vo
           ? `Claude Code CLI not found (${claudeBin()}). Install it or set its path in Settings.`
           : err.message
         : stderr.trim() || `claude exited with code ${code}`
-      resolve({ type: 'result', ok: false, text: msg, sessionId, tokens })
+      resolve({ type: 'result', ok: false, text: msg, sessionId, tokens, reason: err ? 'spawn_error' : 'exit' })
     }
     child.on('error', (e) => finish(null, e))
     child.on('close', (code) => finish(code))

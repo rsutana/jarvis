@@ -20,6 +20,7 @@ import { cleanStepDeps } from './graph'
 const busy = new Set<string>()
 const READ_TOOLS = ['Read', 'Glob', 'Grep']
 const MAX_FIXES = 2
+const MAX_TURNS = 8 // steps (file reads, replies) one Jarvis call may take
 const INLINE_MAX = 60_000 // text attachments up to this size go straight into the prompt
 
 function cwd(): string {
@@ -222,7 +223,8 @@ export async function send(conversationId: string, text: string, uploads: ChatUp
           tools: READ_TOOLS,
           addDirs: dirs,
           resume: conv.sessionId,
-          timeoutMs: 5 * 60_000
+          timeoutMs: 5 * 60_000,
+          maxTurns: MAX_TURNS
         },
         (e) => {
           if (e.type === 'init') conv.sessionId = e.sessionId
@@ -238,6 +240,12 @@ export async function send(conversationId: string, text: string, uploads: ChatUp
     const tagged = mentions(text)
     const picked = tagged ? `\n\n<mentions>\n${tagged}\n</mentions>` : ''
     const r = await ask(`${text || 'Have a look at the attached files.'}${files}${picked}\n\n<app_state>\n${stateSummary()}\n</app_state>`)
+    if (!r.ok && r.reason === 'error_max_turns') {
+      // the session is fine, it just ran out of steps; keep it so the next message carries on
+      steps.push({ label: `Stopped after ${MAX_TURNS} steps`, ok: false })
+      addMessage({ conversationId, role: 'jarvis', text: 'I read a lot without reaching an answer. Point me at a file or narrow the question.', toolSteps: steps })
+      return
+    }
     if (!r.ok) {
       // a stale session id is the usual cause; drop it so the next turn starts fresh
       conv.sessionId = undefined
